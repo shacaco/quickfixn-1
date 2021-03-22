@@ -53,7 +53,7 @@ namespace UnitTests
             const string fixMsg3 = "8=FIX.4.2\x01" + "9=19\x01" + "35=A\x01" + "108=30\x01" + "9710=8\x01" + "10=31\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream((System.Text.Encoding.UTF8.GetBytes(fixMsg1 + fixMsg2 + fixMsg3)));
+            parser.AddToStream((CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2 + fixMsg3)));
 
             string readFixMsg1;
             Assert.True(parser.ReadFixMessage(out readFixMsg1));
@@ -94,12 +94,12 @@ namespace UnitTests
             string partFixMsg2 = "88\x01" + "123=Y\x01" + "10=34\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream(System.Text.Encoding.UTF8.GetBytes(partFixMsg1));
+            parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg1));
 
             string readPartFixMsg;
             Assert.False(parser.ReadFixMessage(out readPartFixMsg));
 
-            parser.AddToStream(System.Text.Encoding.UTF8.GetBytes(partFixMsg2));
+            parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg2));
             Assert.True(parser.ReadFixMessage(out readPartFixMsg));
             Assert.AreEqual(partFixMsg1 + partFixMsg2, readPartFixMsg);
         }
@@ -110,7 +110,7 @@ namespace UnitTests
             string fixMsg = "8=TEST\x01" + "9=TEST\x01" + "35=TEST\x01" + "49=SS1\x01" + "56=RORE\x01" + "34=3\x01" + "52=20050222-16:45:53\x01" + "10=TEST\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream(System.Text.Encoding.UTF8.GetBytes(fixMsg));
+            parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg));
 
             string readFixMsg;
             Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out readFixMsg); });
@@ -128,11 +128,15 @@ namespace UnitTests
             Assert.AreEqual("é", "\x00E9");
             Assert.AreEqual("é", "\xE9");
 
-            string[] fixMsgFields2 = { "8=FIX.4.4", "9=20", "35=B", "148=Olé!", "33=0", "10=0" };
+            // In 1.8 and earlier, the default encoding was UTF-8, which treated "é" as 2 bytes,
+            // and this message had 9=20, which didn't agree with other implementations.
+            // Now that the default encoding is ISO-8859-1, "é" is one byte,
+            // and 9=19.
+            string[] fixMsgFields2 = { "8=FIX.4.4", "9=19", "35=B", "148=Olé!", "33=0", "10=0" };
             string fixMsg2 = String.Join("\x01", fixMsgFields2) + "\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream(System.Text.Encoding.UTF8.GetBytes(fixMsg1 + fixMsg2));
+            parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2));
 
             string readFixMsg1;
             Assert.True(parser.ReadFixMessage(out readFixMsg1));
@@ -150,7 +154,7 @@ namespace UnitTests
             string fixMsg1 = String.Join("\x01", fixMsgFields1) + "\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream(System.Text.Encoding.UTF8.GetBytes(fixMsg1));
+            parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1));
 
             string readFixMsg1;
             Assert.True(parser.ReadFixMessage(out readFixMsg1));

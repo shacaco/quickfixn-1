@@ -188,7 +188,7 @@ namespace QuickFix
 
         public bool Send(string data)
         {
-            byte[] rawData = System.Text.Encoding.UTF8.GetBytes(data);
+            byte[] rawData = CharEncoding.DefaultEncoding.GetBytes(data);
             stream_.Write(rawData, 0, rawData.Length);
             return true;
         }

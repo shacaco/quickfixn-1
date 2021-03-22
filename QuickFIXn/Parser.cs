@@ -9,10 +9,10 @@ namespace QuickFix
     public class Parser
     {
         private static readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new ProducerConsumerBuffer<byte[]>(16, true, true, () => new byte[1024]);
-        private static readonly byte[] Message9TagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01" + "9=");
-        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01" + "10=");
-        private static readonly byte[] MessageBeginStringTag = System.Text.Encoding.UTF8.GetBytes("8=");
-        private static readonly byte[] MessageSeparatorTag = System.Text.Encoding.UTF8.GetBytes("\x01");
+        private static readonly byte[] Message9TagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "9=");
+        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "10=");
+        private static readonly byte[] MessageBeginStringTag = CharEncoding.DefaultEncoding.GetBytes("8=");
+        private static readonly byte[] MessageSeparatorTag = CharEncoding.DefaultEncoding.GetBytes("\x01");
 
         private byte[] buffer_;
         private int usedBufferLength;
@@ -78,7 +78,7 @@ namespace QuickFix
                     return false;//no separator found
                 totalMsgLength += index + 1;
 
-                msg = System.Text.Encoding.UTF8.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
+                msg = CharEncoding.DefaultEncoding.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
                 buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }
@@ -94,7 +94,7 @@ namespace QuickFix
 
         public bool ExtractLength(out int length, out int pos, string buf)
         {
-            return ExtractLength(out length, out pos, System.Text.Encoding.UTF8.GetBytes(buf), 0);
+            return ExtractLength(out length, out pos, CharEncoding.DefaultEncoding.GetBytes(buf), 0);
         }
 
         private static bool ExtractLength(out int lengthValue, out int pos, byte[] buffer, int offset)
@@ -114,7 +114,7 @@ namespace QuickFix
             if (-1 == endPos)
                 return false;
 
-            string strLength = System.Text.Encoding.UTF8.GetString(buffer, startPos + offset, endPos);
+            string strLength = CharEncoding.DefaultEncoding.GetString(buffer, startPos + offset, endPos);
             try
             {
                 lengthValue = Fields.Converters.IntConverter.Convert(strLength);

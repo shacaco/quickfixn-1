@@ -138,7 +138,7 @@ namespace UnitTests
 
             var msgs = new List<string>();
             store.Get(2, 3, msgs);
-            Assert.AreEqual(msgs.Count,0);
+            Assert.That(msgs, Is.Empty);
         }
 
         [Test]
