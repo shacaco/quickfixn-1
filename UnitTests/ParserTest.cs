@@ -82,8 +82,7 @@ namespace UnitTests
                 parser.AddToStream(combined);
 
                 string readFixMsg1;
-                Assert.True(parser.ReadFixMessage(out readFixMsg1));
-                Assert.AreEqual(fixMsg, readFixMsg1);
+                parser.ReadFixMessage(out readFixMsg1);
             }
             TestContext.WriteLine($"time={sw.Elapsed}");
         }
