@@ -79,7 +79,7 @@ namespace UnitTests
             sw.Start();
             for (int i = 0; i < 100000; i++)
             {
-                parser.AddToStream(combined, combined.Length);
+                parser.AddToStream(combined);
 
                 string readFixMsg1;
                 Assert.True(parser.ReadFixMessage(out readFixMsg1));
