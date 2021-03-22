@@ -20,15 +20,20 @@ namespace QuickFix
             buffer_ = ArrayPool<byte>.Shared.Rent(1024);
         }
 
-        private void DoAddToStream(ReadOnlySpan<byte> data, int bytesAdded)
+        private void DoAddToStream(byte[] data, int bytesAdded)
         {
             if (buffer_.Length < usedBufferLength + bytesAdded)
                 System.Array.Resize<byte>(ref buffer_, (usedBufferLength + bytesAdded));
-            System.Buffer.BlockCopy(data.ToArray(), 0, buffer_, usedBufferLength , bytesAdded);
+            System.Buffer.BlockCopy(data, 0, buffer_, usedBufferLength , bytesAdded);
             usedBufferLength += bytesAdded;
         }
 
         public void AddToStream(ReadOnlySpan<byte> data)
+        {
+            DoAddToStream(data.ToArray(), data.Length);
+        }
+
+        public void AddToStream(byte[] data)
         {
             DoAddToStream(data, data.Length);
         }
