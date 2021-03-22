@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using QuickFix;
 using System;
+using System.Diagnostics;
 
 namespace UnitTests
 {
@@ -65,6 +66,26 @@ namespace UnitTests
             string readFixMsg3;
             Assert.True(parser.ReadFixMessage(out readFixMsg3));
             Assert.AreEqual(fixMsg3, readFixMsg3);
+        }
+
+        [Test]
+        public void BenchmarkReading()
+        {
+            const string fixMsg = "8=FIX.4.2\x01" + "9=19\x01" + "35=A\x01" + "108=30\x01" + "9710=8\x01" + "10=31\x01";
+
+            Parser parser = new Parser();
+            byte[] combined = StrToBytes(fixMsg);
+            var sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                parser.AddToStream(combined, combined.Length);
+
+                string readFixMsg1;
+                Assert.True(parser.ReadFixMessage(out readFixMsg1));
+                Assert.AreEqual(fixMsg, readFixMsg1);
+            }
+            TestContext.WriteLine($"time={sw.Elapsed}");
         }
 
         [Test]
