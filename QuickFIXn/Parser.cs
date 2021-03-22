@@ -9,8 +9,8 @@ namespace QuickFix
     public class Parser
     {
         private static readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new ProducerConsumerBuffer<byte[]>(16, true, true, () => new byte[1024]);
-        private static readonly byte[] Message9TagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"9=");
-        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"10=");
+        private static readonly byte[] Message9TagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01" + "9=");
+        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01" + "10=");
         private static readonly byte[] MessageBeginStringTag = System.Text.Encoding.UTF8.GetBytes("8=");
         private static readonly byte[] MessageSeparatorTag = System.Text.Encoding.UTF8.GetBytes("\x01");
 
@@ -26,7 +26,7 @@ namespace QuickFix
         {
             if (buffer_.Length < usedBufferLength + bytesAdded)
                 System.Array.Resize<byte>(ref buffer_, (usedBufferLength + bytesAdded));
-            System.Buffer.BlockCopy(data, 0, buffer_, usedBufferLength , bytesAdded);
+            System.Buffer.BlockCopy(data, 0, buffer_, usedBufferLength, bytesAdded);
             usedBufferLength += bytesAdded;
         }
 
@@ -43,18 +43,18 @@ namespace QuickFix
         public bool ReadFixMessage(out string msg)
         {
             msg = "";
-            
-            if(buffer_.Length < 2)//too short
+
+            if (buffer_.Length < 2)//too short
                 return false;
 
             ReadOnlySpan<byte> buf = buffer_.AsSpan();
 
             var msgStartPos = buf.IndexOf(MessageBeginStringTag);
-            if(-1 == msgStartPos)//cant find 8= string
+            if (-1 == msgStartPos)//cant find 8= string
                 return false;
 
             buf = buf.Slice(msgStartPos);//slice the buffer to start from 8=
- 
+
             int totalMsgLength = 0;
             int innerLength = 0;
 
@@ -76,7 +76,7 @@ namespace QuickFix
                 index = buf.Slice(totalMsgLength).IndexOf(MessageSeparatorTag);//last separator
                 if (-1 == index)
                     return false;//no separator found
-                totalMsgLength += index +1;
+                totalMsgLength += index + 1;
 
                 msg = System.Text.Encoding.UTF8.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
                 buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
@@ -114,7 +114,7 @@ namespace QuickFix
             if (-1 == endPos)
                 return false;
 
-            string strLength = System.Text.Encoding.UTF8.GetString(buffer, startPos+offset, endPos);
+            string strLength = System.Text.Encoding.UTF8.GetString(buffer, startPos + offset, endPos);
             try
             {
                 lengthValue = Fields.Converters.IntConverter.Convert(strLength);
@@ -138,9 +138,10 @@ namespace QuickFix
 
         private byte[] RemoveAndSwitch(byte[] array, int count)
         {
-            byte[] returnByte = _producerConsumerBuffer.Dequeue(); 
-            System.Buffer.BlockCopy(array, count, returnByte,0, array.Length - count);
+            byte[] returnByte = _producerConsumerBuffer.Dequeue();
+            System.Buffer.BlockCopy(array, count, returnByte, 0, array.Length - count);
             usedBufferLength -= count;
+            Array.Clear(array, 0, array.Length);
             _producerConsumerBuffer.Enqueue(array);
             return returnByte;
         }
