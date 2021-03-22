@@ -1,3 +1,4 @@
+using My_Collections;
 using System;
 using System.Buffers;
 
@@ -7,6 +8,7 @@ namespace QuickFix
     /// </summary>
     public class Parser
     {
+        private static readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new ProducerConsumerBuffer<byte[]>(16, true, true, () => new byte[1024]);
         private static readonly byte[] Message9TagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"9=");
         private static readonly byte[] MessageChecksumTagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"10=");
         private static readonly byte[] MessageBeginStringTag = System.Text.Encoding.UTF8.GetBytes("8=");
@@ -17,7 +19,7 @@ namespace QuickFix
 
         public Parser()
         {
-            buffer_ = ArrayPool<byte>.Shared.Rent(1024);
+            buffer_ = _producerConsumerBuffer.Dequeue();
         }
 
         private void DoAddToStream(byte[] data, int bytesAdded)
@@ -45,7 +47,7 @@ namespace QuickFix
             if(buffer_.Length < 2)//too short
                 return false;
 
-            Span<byte> buf = buffer_.AsSpan();
+            ReadOnlySpan<byte> buf = buffer_.AsSpan();
 
             var msgStartPos = buf.IndexOf(MessageBeginStringTag);
             if(-1 == msgStartPos)//cant find 8= string
@@ -99,7 +101,7 @@ namespace QuickFix
         {
             lengthValue = 0;
             pos = 0;
-            Span<byte> buf = buffer.AsSpan().Slice(offset);
+            ReadOnlySpan<byte> buf = buffer.AsSpan().Slice(offset);
 
             if (buf.Length < 1)
                 return false;
@@ -136,10 +138,10 @@ namespace QuickFix
 
         private byte[] RemoveAndSwitch(byte[] array, int count)
         {
-            byte[] returnByte = ArrayPool<byte>.Shared.Rent(Math.Max(1024, array.Length - count));
+            byte[] returnByte = _producerConsumerBuffer.Dequeue(); 
             System.Buffer.BlockCopy(array, count, returnByte,0, array.Length - count);
             usedBufferLength -= count;
-            ArrayPool<byte>.Shared.Return(array, true);
+            _producerConsumerBuffer.Enqueue(array);
             return returnByte;
         }
     }
