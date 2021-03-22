@@ -98,7 +98,7 @@ namespace QuickFix.Transport
                         // so we resort to storing it in a local file.
                         try
                         {
-                            File.AppendAllText("DisposedSessionEvents.log", $"{System.DateTime.Now:G}: {exceptionEvent}{Environment.NewLine}");
+                            File.AppendAllText("DisposedSessionEvents.log", $"{MyDateTime.PreciseDateTime.Now:G}: {exceptionEvent}{Environment.NewLine}");
                         }
                         catch (IOException)
                         {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using My_Collections;
 
 namespace QuickFix.Fields
 {
@@ -10,6 +11,11 @@ namespace QuickFix.Fields
     /// </summary>
     public class BooleanField : FieldBase<Boolean>
     {
+        public static readonly FactoryRepo<BooleanField> Factory = new FactoryRepo<BooleanField>(500000, () => new BooleanField(), 499000);
+
+        private BooleanField()
+            : base(-1, false) { }
+
         public BooleanField(int tag)
             : base(tag, false) { }
            

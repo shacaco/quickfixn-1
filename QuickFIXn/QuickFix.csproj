@@ -36,4 +36,17 @@
       <_Parameter1>UnitTests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="My Collections">
+      <HintPath>..\..\My Collections\repo\My-Collections\My Collections\bin\Release\netstandard2.0\My Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="MyDateTime">
+      <HintPath>..\..\MyDateTime\MyDateTime\MyDateTime\bin\Release\netstandard2.0\MyDateTime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@ namespace QuickFix
     {
         #region Private Members
 
-        System.Collections.Generic.Dictionary<int, string> messages_;
+        internal System.Collections.Generic.Dictionary<int, string> Messages { get; private set; }
         int nextSenderMsgSeqNum_;
         int nextTargetMsgSeqNum_;
         DateTime? creationTime;
@@ -19,7 +19,7 @@ namespace QuickFix
 
         public MemoryStore()
         {
-            messages_ = new System.Collections.Generic.Dictionary<int, string>();
+            Messages = new System.Collections.Generic.Dictionary<int, string>();
             Reset();
         }
 
@@ -27,8 +27,8 @@ namespace QuickFix
         {
             for (int current = begSeqNo; current <= endSeqNo; current++)
             {
-                if (messages_.ContainsKey(current))
-                    messages.Add(messages_[current]);
+                if (Messages.ContainsKey(current))
+                    messages.Add(Messages[current]);
             }
         }
 
@@ -36,7 +36,7 @@ namespace QuickFix
 
         public bool Set(int msgSeqNum, string msg)
         {
-            messages_[msgSeqNum] = msg;
+            Messages[msgSeqNum] = msg;
             return true;
         }
 
@@ -75,8 +75,8 @@ namespace QuickFix
         {
             nextSenderMsgSeqNum_ = 1;
             nextTargetMsgSeqNum_ = 1;
-            messages_.Clear();
-            creationTime = DateTime.UtcNow;
+            Messages.Clear();
+            creationTime = MyDateTime.PreciseDateTime.NowUTC;
         }
 
         public void Refresh()
@@ -93,7 +93,7 @@ namespace QuickFix
             if (_disposed) return;
             if (disposing)
             {
-                messages_ = null;
+                Messages = null;
             }
             _disposed = true;
         }

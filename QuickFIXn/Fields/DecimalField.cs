@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using My_Collections;
 
 namespace QuickFix.Fields
 {
@@ -9,6 +10,11 @@ namespace QuickFix.Fields
     /// </summary>
     public class DecimalField : FieldBase<Decimal>
     {
+        public static readonly FactoryRepo<DecimalField> Factory = new FactoryRepo<DecimalField>(250000, () => new DecimalField(), 249000);
+
+        private DecimalField()
+            : base(-1, new Decimal(0.0)) { }
+
         public DecimalField(int tag)
             : base(tag, new Decimal(0.0)) {}
 

@@ -5,13 +5,14 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using System.Threading;
+using QuickFix;
 
 namespace UnitTests
 {
     [TestFixture]
     public class FileStoreTests
     {
-        QuickFix.FileStore store;
+        QuickFix.IMessageStore store;
         QuickFix.FileStoreFactory factory;
 
         QuickFix.SessionSettings settings;
@@ -32,22 +33,24 @@ namespace UnitTests
             QuickFix.Dictionary config = new QuickFix.Dictionary();
             config.SetString(QuickFix.SessionSettings.CONNECTION_TYPE, "initiator");
             config.SetString(QuickFix.SessionSettings.FILE_STORE_PATH, storeDirectory);
+            config.SetString(QuickFix.SessionSettings.ASYNC_FILE_STORE, "Y");
 
             settings = new QuickFix.SessionSettings();
             settings.Set(sessionID, config);
             factory = new QuickFix.FileStoreFactory(settings);
 
-            store = (QuickFix.FileStore)factory.Create(sessionID);
+            store = (QuickFix.FileStoreAsync)factory.Create(sessionID);
         }
 
         void rebuildStore()
         {
+            Thread.Sleep(50);
             if(store != null)
             {
                 store.Dispose();
             }
 
-            store = (QuickFix.FileStore)factory.Create(sessionID);
+            store = (QuickFix.FileStoreAsync)factory.Create(sessionID);
         }
 
 
@@ -135,7 +138,7 @@ namespace UnitTests
 
             var msgs = new List<string>();
             store.Get(2, 3, msgs);
-            Assert.That(msgs,Is.Empty);
+            Assert.AreEqual(msgs.Count,0);
         }
 
         [Test]

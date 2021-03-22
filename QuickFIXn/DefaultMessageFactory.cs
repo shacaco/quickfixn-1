@@ -89,7 +89,10 @@ namespace QuickFix
 
             // didn't find a factory, so return a generic Message object
             var message = new Message();
-            message.Header.SetField(new StringField(QuickFix.Fields.Tags.MsgType, msgType));
+            var field = StringField.Factory.GetNext();
+            field.Tag = QuickFix.Fields.Tags.MsgType;
+            field.Obj = msgType;
+            message.Header.SetField(field);
             return message;
         }
 

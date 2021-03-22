@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using My_Collections;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
 
@@ -12,12 +14,13 @@ namespace QuickFix
     /// </summary>
     public class FieldMap : IEnumerable<KeyValuePair<int, Fields.IField>>
     {
+        protected static readonly ProducerConsumerBuffer<StringBuilder> StringBuilderBuffer = new ProducerConsumerBuffer<StringBuilder>(128, true, true, () => new StringBuilder());
         /// <summary>
         /// Default constructor
         /// </summary>
         public FieldMap()
         {
-            _fields = new SortedDictionary<int, Fields.IField>(); // FIXME sorted dict is a hack to get quasi-correct field order
+            _fields = new ConcurrentDictionary<int, Fields.IField>(); // FIXME sorted dict is a hack to get quasi-correct field order
             _groups = new Dictionary<int, List<Group>>();
             this.RepeatedTags = new List<Fields.IField>();
         }
@@ -47,7 +50,7 @@ namespace QuickFix
         {
             this._fieldOrder = src._fieldOrder;
 
-            this._fields = new SortedDictionary<int, Fields.IField>(src._fields);
+            this._fields = new ConcurrentDictionary<int, Fields.IField>(src._fields);
 
             this._groups = new Dictionary<int, List<Group>>();
             foreach (KeyValuePair<int, List<Group>> g in src._groups)
@@ -81,7 +84,7 @@ namespace QuickFix
         /// <returns>true if field was removed, false otherwise</returns>
         public bool RemoveField(int field)
         {
-            return _fields.Remove(field);
+            return _fields.TryRemove(field, out _);
         }
 
         /// <summary>
@@ -114,7 +117,7 @@ namespace QuickFix
         {
             if (_fields.ContainsKey(field.Tag) && !overwrite)
                 return false;
-            
+
             SetField(field);
             return true;
         }
@@ -539,6 +542,8 @@ namespace QuickFix
         {
             _fields.Clear();
             _groups.Clear();
+            RepeatedTags?.Clear();
+            _fieldOrder = null;
         }
 
         /// <summary>
@@ -553,10 +558,10 @@ namespace QuickFix
         public int CalculateTotal()
         {
             int total = 0;
-            foreach (Fields.IField field in _fields.Values)
+            foreach (var field in _fields.OrderBy(x=>x.Key))
             {
-                if (field.Tag != Fields.Tags.CheckSum)
-                    total += field.getTotal();
+                if (field.Value.Tag != Fields.Tags.CheckSum)
+                    total += field.Value.getTotal();
             }
 
             foreach (Fields.IField field in this.RepeatedTags)
@@ -576,14 +581,14 @@ namespace QuickFix
         public int CalculateLength()
         {
             int total = 0;
-            foreach (Fields.IField field in _fields.Values)
+            foreach (var field in _fields.OrderBy(x => x.Key))
             {
-                if (field != null
-                    && field.Tag != Tags.BeginString
-                    && field.Tag != Tags.BodyLength
-                    && field.Tag != Tags.CheckSum)
+                if (field.Value != null
+                    && field.Value.Tag != Tags.BeginString
+                    && field.Value.Tag != Tags.BodyLength
+                    && field.Value.Tag != Tags.CheckSum)
                 {
-                    total += field.getLength();
+                    total += field.Value.getLength();
                 }
             }
 
@@ -603,16 +608,17 @@ namespace QuickFix
                 foreach (Group group in groupList)
                     total += group.CalculateLength();
             }
-    
+
             return total;
         }
 
         public virtual string CalculateString()
         {
-            if( FieldOrder != null )
-                return CalculateString(new StringBuilder(), FieldOrder);
-            else
-                return CalculateString(new StringBuilder(), new int[0]);
+            var stringBuilder = StringBuilderBuffer.Dequeue();
+            stringBuilder.Clear();
+            var result = CalculateString(stringBuilder, FieldOrder ?? new int[0]);
+            StringBuilderBuffer.Enqueue(stringBuilder);
+            return result;
         }
 
         public virtual string CalculateString(StringBuilder sb, int[] preFields)
@@ -633,13 +639,13 @@ namespace QuickFix
                 }
             }
 
-            foreach (Fields.IField field in _fields.Values)
+            foreach (var field in _fields.OrderBy(x => x.Key))
             {
-                if (groupCounterTags.Contains(field.Tag))
+                if (groupCounterTags.Contains(field.Value.Tag))
                     continue;
-                if (preFields.Contains(field.Tag))
+                if (preFields.Contains(field.Value.Tag))
                     continue; //already did this one
-                sb.Append(field.Tag.ToString() + "=" + field.ToString());
+                sb.Append(field.Value.Tag.ToString() + "=" + field.Value.ToString());
                 sb.Append(Message.SOH);
             }
 
@@ -690,7 +696,7 @@ namespace QuickFix
         }
 
         #region Private Members
-        private SortedDictionary<int, Fields.IField> _fields; /// FIXME sorted dict is a hack to get quasi-correct field order
+        private ConcurrentDictionary<int, Fields.IField> _fields; /// FIXME sorted dict is a hack to get quasi-correct field order
         private Dictionary<int, List<Group>> _groups;
         protected int[] _fieldOrder;
         #endregion
@@ -706,7 +712,7 @@ namespace QuickFix
 
         public IEnumerator<KeyValuePair<int, IField>> GetEnumerator()
         {
-            return _fields.GetEnumerator();
+            return _fields.OrderBy(x => x.Key).GetEnumerator();
         }
 
         #endregion
@@ -715,7 +721,7 @@ namespace QuickFix
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _fields.GetEnumerator();
+            return _fields.OrderBy(x=>x.Key).GetEnumerator();
         }
 
         #endregion

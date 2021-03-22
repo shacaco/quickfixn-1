@@ -154,6 +154,7 @@ namespace QuickFix
             if (settings.Has(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME))
                 session.RequiresOrigSendingTime = settings.GetBool(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME);
 
+            application_.OnCreate(session.SessionID);
             return session;
         }
 

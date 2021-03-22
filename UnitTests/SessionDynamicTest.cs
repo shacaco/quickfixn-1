@@ -119,6 +119,7 @@ namespace UnitTests
             SessionSettings settings = new SessionSettings();
             Dictionary defaults = new Dictionary();
             defaults.SetString(QuickFix.SessionSettings.FILE_LOG_PATH, _logPath);
+            defaults.SetBool(QuickFix.SessionSettings.ASYNC_FILE_LOG, true);
 
             // Put IP endpoint settings into default section to verify that that defaults get merged into
             // session-specific settings not only for static sessions, but also for dynamic ones

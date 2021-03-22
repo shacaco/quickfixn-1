@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using My_Collections;
 
 namespace QuickFix.Fields
 {
@@ -9,6 +10,11 @@ namespace QuickFix.Fields
     /// </summary>
     public class IntField : FieldBase<int>
     {
+        public static readonly FactoryRepo<IntField> Factory = new FactoryRepo<IntField>(500000, () => new IntField(), 499000);
+
+        private IntField()
+            : base(-1, 0) { }
+
         public IntField(int tag)
             : base(tag, 0) { }
 

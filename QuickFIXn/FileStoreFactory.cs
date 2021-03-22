@@ -16,6 +16,8 @@
             settings_ = settings;
         }
 
+        #region MessageStoreFactory Members
+
         /// <summary>
         /// Creates a file-based message store
         /// </summary>
@@ -23,7 +25,12 @@
         /// <returns></returns>
         public IMessageStore Create(SessionID sessionID)
         {
+            var isAsync = settings_.Get(sessionID).Has(SessionSettings.ASYNC_FILE_STORE) && settings_.Get(sessionID).GetBool(SessionSettings.ASYNC_FILE_STORE);
+            if (isAsync)
+                return new FileStoreAsync(settings_.Get(sessionID).GetString(SessionSettings.FILE_STORE_PATH), sessionID);
             return new FileStore(settings_.Get(sessionID).GetString(SessionSettings.FILE_STORE_PATH), sessionID);
         }
+
+        #endregion
     }
 }

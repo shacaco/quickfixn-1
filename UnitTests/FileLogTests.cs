@@ -10,7 +10,7 @@ namespace UnitTests
     [TestFixture]
     public class FileLogTests
     {
-        QuickFix.FileLog log;
+        QuickFix.ILog log;
 
         [SetUp]
         public void setup()
@@ -60,11 +60,12 @@ namespace UnitTests
             QuickFix.Dictionary config = new QuickFix.Dictionary();
             config.SetString(QuickFix.SessionSettings.CONNECTION_TYPE, "initiator");
             config.SetString(QuickFix.SessionSettings.FILE_LOG_PATH, logDirectory);
+            config.SetString(QuickFix.SessionSettings.ASYNC_FILE_LOG, "Y");
 
             settings.Set(sessionID, config);
 
             QuickFix.FileLogFactory factory = new QuickFix.FileLogFactory(settings);
-            log = (QuickFix.FileLog)factory.Create(sessionID);
+            log = factory.Create(sessionID);
 
             log.OnEvent("some event");
             log.OnIncoming("some incoming");
@@ -87,5 +88,6 @@ namespace UnitTests
 
             Assert.Throws<QuickFix.ConfigError>(delegate { factory.Create(sessionID); });
         }
+
     }
 }

@@ -4,55 +4,50 @@ namespace QuickFix
 {
     internal class MessageBuilder
     {
-        private string _msgStr;
-        private bool _validateLengthAndChecksum;
-        private DataDictionary.DataDictionary _sessionDD;
-        private DataDictionary.DataDictionary _appDD;
-        private IMessageFactory _msgFactory;
+        private readonly bool _validateLengthAndChecksum;
+        private readonly DataDictionary.DataDictionary _sessionDD;
+        private readonly DataDictionary.DataDictionary _appDD;
+        private readonly IMessageFactory _msgFactory;
+        private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
 
         private QuickFix.Fields.MsgType _msgType;
         private string _beginString;
-
+        private string _msgStr;
         private Message _message;
-        private QuickFix.Fields.ApplVerID _defaultApplVerId;
 
-        public string OriginalString { get { return _msgStr; } }
-        public QuickFix.Fields.MsgType MsgType { get { return _msgType; } }
+        public string OriginalString => _msgStr;
+        public QuickFix.Fields.MsgType MsgType => _msgType;
 
         /// <summary>
         /// The BeginString from the raw FIX message
         /// </summary>
         public string BeginString { get { return _beginString; } }
 
-        internal MessageBuilder(
-            string msgStr,
-            string defaultApplVerId,
+        internal MessageBuilder(string defaultApplVerId,
             bool validateLengthAndChecksum,
             DataDictionary.DataDictionary sessionDD,
             DataDictionary.DataDictionary appDD,
             IMessageFactory msgFactory)
         {
-            _msgStr = msgStr;
             _defaultApplVerId = new ApplVerID(defaultApplVerId);
             _validateLengthAndChecksum = validateLengthAndChecksum;
             _sessionDD = sessionDD;
             _appDD = appDD;
             _msgFactory = msgFactory;
-            _msgType = Message.IdentifyType(_msgStr);
-            _beginString = Message.ExtractBeginString(_msgStr);
         }
 
         internal Message Build()
         {
-            Message message = _msgFactory.Create(_beginString, _defaultApplVerId, _msgType.Obj);
-            message.FromString(
-                _msgStr,
-                _validateLengthAndChecksum,
-                _sessionDD,
-                _appDD,
-                _msgFactory);
-            _message = message;
+            _message = _msgFactory.Create(_beginString, _defaultApplVerId, _msgType.Obj);
+            _message.FromString(_msgStr, _validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory);
             return _message;
+        }
+
+        internal void SetData(string msgStr)
+        {
+            _msgStr = msgStr;
+            _msgType = Message.IdentifyType(_msgStr);
+            _beginString = Message.ExtractBeginString(_msgStr);
         }
 
         internal Message RejectableMessage()

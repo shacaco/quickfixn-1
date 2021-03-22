@@ -1,10 +1,16 @@
 ﻿using System;
+using My_Collections;
 using QuickFix.Fields.Converters;
 
 namespace QuickFix.Fields
 {
     public class DateTimeField : FieldBase<DateTime>
     {
+        public static readonly FactoryRepo<DateTimeField> Factory = new FactoryRepo<DateTimeField>(250000, () => new DateTimeField(), 249000);
+
+        private DateTimeField()
+            : base(-1, DateTime.MinValue) { }
+
         protected readonly TimeStampPrecision timePrecision = TimeStampPrecision.Millisecond;
         public DateTimeField(int tag)
             : base(tag, new DateTime()) {}

@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using QuickFix.Fields;
 using System.Text.RegularExpressions;
-using System.Collections.Generic;
 
 namespace QuickFix
 {
@@ -20,7 +21,11 @@ namespace QuickFix
 
         public override string CalculateString()
         {
-            return base.CalculateString(new StringBuilder(), HEADER_FIELD_ORDER);
+            var stringBuilder = StringBuilderBuffer.Dequeue();
+            stringBuilder.Clear();
+            var result = CalculateString(stringBuilder, HEADER_FIELD_ORDER);
+            StringBuilderBuffer.Enqueue(stringBuilder);
+            return result;
         }
 
         public override string CalculateString(StringBuilder sb, int[] preFields)
@@ -57,6 +62,8 @@ namespace QuickFix
     /// </summary>
     public class Message : FieldMap
     {
+        private const string MSG_TYPE_STRING = Message.SOH + "35=([^" + Message.SOH + "]*)" + Message.SOH;
+        private const char CHAR_1 = (char)1;
         public const string SOH = "\u0001";
         private int field_ = 0;
         private bool validStructure_;
@@ -138,8 +145,10 @@ namespace QuickFix
                 int tagend = msgstr.IndexOf('=', pos);
                 int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
                 pos = tagend + 1;
-                int fieldvalend = msgstr.IndexOf((char)1, pos);
-                StringField field =  new StringField(tag, msgstr.Substring(pos, fieldvalend - pos));
+                int fieldvalend = msgstr.IndexOf(SOH, pos);
+                StringField field = StringField.Factory.GetNext();
+                field.Tag = tag;
+                field.Obj = msgstr.Substring(pos, fieldvalend - pos);
 
                 /*
                  TODO data dict stuff
@@ -305,7 +314,7 @@ namespace QuickFix
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
         public static string GetMsgType(string fixstring)
         {
-            Match match = Regex.Match(fixstring, Message.SOH + "35=([^" + Message.SOH + "]*)" + Message.SOH);
+            Match match = Regex.Match(fixstring, MSG_TYPE_STRING);
             if (match.Success)
                 return match.Groups[1].Value;
 
@@ -784,6 +793,19 @@ namespace QuickFix
             this.Header.Clear();
             base.Clear();
             this.Trailer.Clear();
+        }
+
+        public void ClearAndInitialize()
+        {
+            field_ = 0;
+            var bs = Header.GetString(Tags.BeginString);
+            var mt = Header.GetString(Tags.MsgType);
+            this.Header.Clear();
+            this.Header.SetField(new BeginString(bs));
+            this.Header.SetField(new QuickFix.Fields.MsgType(mt));
+            base.Clear();
+            this.Trailer.Clear();
+            validStructure_ = true;
         }
 
         private Object lock_ToString = new Object();

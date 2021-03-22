@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 
 namespace QuickFix
 {
@@ -6,163 +7,136 @@ namespace QuickFix
     /// </summary>
     public class Parser
     {
-        private byte[] buffer_ = new byte[512];
-        int usedBufferLength = 0;
+        private static readonly byte[] Message9TagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"9=");
+        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = System.Text.Encoding.UTF8.GetBytes("\x01"+"10=");
+        private static readonly byte[] MessageBeginStringTag = System.Text.Encoding.UTF8.GetBytes("8=");
+        private static readonly byte[] MessageSeparatorTag = System.Text.Encoding.UTF8.GetBytes("\x01");
 
-        public void AddToStream(byte[] data, int bytesAdded)
+        private byte[] buffer_;
+        private int usedBufferLength;
+
+        public Parser()
+        {
+            buffer_ = ArrayPool<byte>.Shared.Rent(1024);
+        }
+
+        private void DoAddToStream(ReadOnlySpan<byte> data, int bytesAdded)
         {
             if (buffer_.Length < usedBufferLength + bytesAdded)
-                Array.Resize(ref buffer_, (usedBufferLength + bytesAdded));
-            Buffer.BlockCopy(data, 0, buffer_, usedBufferLength , bytesAdded);
+                System.Array.Resize<byte>(ref buffer_, (usedBufferLength + bytesAdded));
+            System.Buffer.BlockCopy(data.ToArray(), 0, buffer_, usedBufferLength , bytesAdded);
             usedBufferLength += bytesAdded;
         }
 
-        [Obsolete("Use the overload without ref instead.")]
-        public void AddToStream(ref byte[] data, int bytesAdded)
+        public void AddToStream(ReadOnlySpan<byte> data)
         {
-            AddToStream(data, bytesAdded);
-        }
-
-        [Obsolete("Unused and will be removed in a future version.")]
-        public void AddToStream(string data)
-        {
-            byte[] bytes = CharEncoding.DefaultEncoding.GetBytes(data);
-            AddToStream(bytes, bytes.Length);
+            DoAddToStream(data, data.Length);
         }
 
         public bool ReadFixMessage(out string msg)
         {
             msg = "";
-
-            if(buffer_.Length < 2)
-                return false;
             
-            int pos = 0;
-            pos = IndexOf(buffer_, "8=", 0);
-            if(-1 == pos)
+            if(buffer_.Length < 2)//too short
                 return false;
 
-            buffer_ = Remove(buffer_, pos);
-            pos = 0;
+            Span<byte> buf = buffer_.AsSpan();
 
-            int length = 0;
+            var msgStartPos = buf.IndexOf(MessageBeginStringTag);
+            if(-1 == msgStartPos)//cant find 8= string
+                return false;
+
+            buf = buf.Slice(msgStartPos);//slice the buffer to start from 8=
+ 
+            int totalMsgLength = 0;
+            int innerLength = 0;
 
             try
             {
-                if (!ExtractLength(out length, out pos, buffer_))
+                if (!ExtractLength(out innerLength, out totalMsgLength, buffer_, msgStartPos))//get length of message and position of next tag(after 9->length)
                     return false;
 
-                // pos is at first character past the BodyLength field (tag 9)
 
-                pos += length;
-                if (buffer_.Length < pos)
+                totalMsgLength += innerLength;//move to end of message
+                if (buf.Length < totalMsgLength)
+                    return false;//length value was wrong 
+
+                int index = buf.Slice(totalMsgLength - 1).IndexOf(MessageChecksumTagWithLeadingSeparator);//look for checksum tag
+                if (-1 == index)
                     return false;
+                totalMsgLength += index + 4;//move to value of 10=
 
-                pos = IndexOf(buffer_, "\x01" + "10=", pos - 1);
-                if (-1 == pos)
-                    return false; // no tag 10 received yet
-                pos += 4; // pos now just after "10="
+                index = buf.Slice(totalMsgLength).IndexOf(MessageSeparatorTag);//last separator
+                if (-1 == index)
+                    return false;//no separator found
+                totalMsgLength += index +1;
 
-                pos = IndexOf(buffer_, "\x01", pos);
-                if (-1 == pos)
-                    return false;
-                pos += 1;
-
-                msg = Substring(buffer_, 0, pos);
-                buffer_ = Remove(buffer_, pos);
+                msg = System.Text.Encoding.UTF8.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
+                buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }
             catch (MessageParseError e)
             {
-                if ((length > 0) && (pos <= buffer_.Length))
-                    buffer_ = Remove(buffer_, pos);
+                if ((innerLength > 0) && (totalMsgLength + msgStartPos) <= buffer_.Length)
+                    buffer_ = RemoveAndSwitch(buffer_, (totalMsgLength + msgStartPos));
                 else
-                    buffer_ = Remove(buffer_, buffer_.Length);
+                    buffer_ = RemoveAndSwitch(buffer_, buffer_.Length);
                 throw e;
             }
         }
 
         public bool ExtractLength(out int length, out int pos, string buf)
         {
-            return ExtractLength(out length, out pos, CharEncoding.DefaultEncoding.GetBytes(buf));
+            return ExtractLength(out length, out pos, System.Text.Encoding.UTF8.GetBytes(buf), 0);
         }
 
-        public bool ExtractLength(out int length, out int pos, byte[] buf)
+        private static bool ExtractLength(out int lengthValue, out int pos, byte[] buffer, int offset)
         {
-            length = 0;
+            lengthValue = 0;
             pos = 0;
+            Span<byte> buf = buffer.AsSpan().Slice(offset);
 
             if (buf.Length < 1)
                 return false;
-
-            int startPos = IndexOf(buf, "\x01" + "9=", 0);
-            if(-1 == startPos)
+            int startPos = buf.IndexOf(Message9TagWithLeadingSeparator);
+            if (-1 == startPos)
                 return false;
-            startPos +=3;
+            startPos += 3;
 
-            int endPos = IndexOf(buf, "\x01", startPos);
-            if(-1 == endPos)
+            int endPos = buf.Slice(startPos).IndexOf(MessageSeparatorTag);
+            if (-1 == endPos)
                 return false;
 
-            string strLength = Substring(buf, startPos, endPos - startPos);
+            string strLength = System.Text.Encoding.UTF8.GetString(buffer, startPos+offset, endPos);
             try
             {
-                length = Fields.Converters.IntConverter.Convert(strLength);
-                if(length < 0)
-                    throw new MessageParseError("Invalid BodyLength (" + length + ")");
+                lengthValue = Fields.Converters.IntConverter.Convert(strLength);
+                if (lengthValue < 0)
+                    throw new MessageParseError("Invalid BodyLength (" + lengthValue + ")");
             }
-            catch(FieldConvertError e)
+            catch (FieldConvertError e)
             {
                 throw new MessageParseError(e.Message, e);
             }
 
-            pos = endPos + 1;
+            pos = startPos + endPos + 1;
             return true;
         }
 
         private bool Fail(string what)
         {
-            Console.WriteLine("Parser failed: " + what);
+            System.Console.WriteLine("Parser failed: " + what);
             return false;
         }
 
-        private int IndexOf(byte[] arrayToSearchThrough, string stringPatternToFind, int offset)
+        private byte[] RemoveAndSwitch(byte[] array, int count)
         {
-            byte[] patternToFind = CharEncoding.DefaultEncoding.GetBytes(stringPatternToFind);
-            if (patternToFind.Length > arrayToSearchThrough.Length)
-                return -1;
-            for (int i = offset; i <= arrayToSearchThrough.Length - patternToFind.Length; i++)
-            {
-                bool found = true;
-                for (int j = 0; j < patternToFind.Length; j++)
-                {
-                    if (arrayToSearchThrough[i + j] != patternToFind[j])
-                    {
-                        found = false;
-                        break;
-                    }
-                }
-                if (found)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        private byte[] Remove(byte[] array, int count)
-        {
-            byte[] returnByte = new byte[array.Length - count];
-            Buffer.BlockCopy(array, count, returnByte, 0, array.Length - count);
+            byte[] returnByte = ArrayPool<byte>.Shared.Rent(Math.Max(1024, array.Length - count));
+            System.Buffer.BlockCopy(array, count, returnByte,0, array.Length - count);
             usedBufferLength -= count;
+            ArrayPool<byte>.Shared.Return(array, true);
             return returnByte;
-        }
-
-        private string Substring(byte[] array, int startIndex, int length)
-        {
-            byte[] returnByte = new byte[length];
-            Buffer.BlockCopy(array, startIndex, returnByte, 0, length);
-            return CharEncoding.DefaultEncoding.GetString(returnByte);
         }
     }
 }
+

@@ -22,6 +22,9 @@ namespace QuickFix
         /// <returns></returns>
         public ILog Create(SessionID sessionID)
         {
+            var isAsync = settings_.Get(sessionID).Has(SessionSettings.ASYNC_FILE_LOG) && settings_.Get(sessionID).GetBool(SessionSettings.ASYNC_FILE_LOG);
+            if (isAsync)
+                return new FileLogAsync(settings_.Get(sessionID).GetString(SessionSettings.FILE_LOG_PATH), sessionID);
             return new FileLog(settings_.Get(sessionID).GetString(SessionSettings.FILE_LOG_PATH), sessionID);
         }
 

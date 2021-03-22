@@ -71,10 +71,11 @@ namespace QuickFix
 
         public override string CalculateString()
         {
-            if (_fieldOrder == null)
-                return base.CalculateString(new StringBuilder(), new int[] { _delim });
-            else
-                return base.CalculateString(new StringBuilder(), _fieldOrder); // 802 shouldn't be in _fieldOrder
+            var stringBuilder = StringBuilderBuffer.Dequeue();
+            stringBuilder.Clear();
+            var result = CalculateString(stringBuilder, _fieldOrder ?? new int[] { _delim });// 802 shouldn't be in _fieldOrder
+            StringBuilderBuffer.Enqueue(stringBuilder);
+            return result;
         }
 
         public override string ToString()
