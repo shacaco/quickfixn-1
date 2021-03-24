@@ -311,7 +311,6 @@ namespace QuickFix
             }
             _messageBuilder = new MessageBuilder(SenderDefaultApplVerID, ValidateLengthAndChecksum, SessionDataDictionary, ApplicationDataDictionary, msgFactory_);
 
-            this.Application.OnCreate(this.SessionID);
             this.Log.OnEvent("Created session");
         }
 
