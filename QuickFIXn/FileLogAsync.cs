@@ -5,6 +5,7 @@ using System.Data.SqlTypes;
 using System.Threading;
 using My_Collections;
 using System.Linq;
+using QuickFix.Fields.Converters;
 
 namespace QuickFix
 {
@@ -125,7 +126,7 @@ namespace QuickFix
         private void AddWriteOperation(ConcurrentQueue<char[]> dest, string msg)
         {
             var b = _buffer.Dequeue();
-            var timeStr = Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC).AsSpan();
+            var timeStr = Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond).AsSpan();
             int index = 0;
             CopyToBuffer(ref b, timeStr, ref index);
             CopyToBuffer(ref b, Colon, ref index);

@@ -1,4 +1,5 @@
 ﻿
+using QuickFix.Fields.Converters;
 using System;
 
 namespace QuickFix
@@ -94,7 +95,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(System.DateTime.UtcNow) + " : " + msg);
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg);
             }
         }
 
@@ -104,7 +105,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(System.DateTime.UtcNow) + " : " + msg);
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg);
             }
         }
 
@@ -114,7 +115,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                eventLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(System.DateTime.UtcNow) + " : "+ s);
+                eventLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : "+ s);
             }
         }
 
