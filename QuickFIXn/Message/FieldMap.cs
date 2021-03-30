@@ -14,7 +14,7 @@ namespace QuickFix
     /// </summary>
     public class FieldMap : IEnumerable<KeyValuePair<int, Fields.IField>>
     {
-        protected static readonly ProducerConsumerBuffer<StringBuilder> StringBuilderBuffer = new ProducerConsumerBuffer<StringBuilder>(128, true, true, () => new StringBuilder());
+        protected readonly StringBuilder _toStringBuilder = new StringBuilder(256);
         /// <summary>
         /// Default constructor
         /// </summary>
@@ -368,7 +368,7 @@ namespace QuickFix
         {
             try
             {
-                Fields.IField fld = _fields[tag];                
+                Fields.IField fld = _fields[tag];
                 return DateTimeConverter.ConvertToDateOnly(fld.ToString());
             }
             catch (System.Collections.Generic.KeyNotFoundException)
@@ -558,7 +558,7 @@ namespace QuickFix
         public int CalculateTotal()
         {
             int total = 0;
-            foreach (var field in _fields.OrderBy(x=>x.Key))
+            foreach (var field in _fields)
             {
                 if (field.Value.Tag != Fields.Tags.CheckSum)
                     total += field.Value.getTotal();
@@ -581,7 +581,7 @@ namespace QuickFix
         public int CalculateLength()
         {
             int total = 0;
-            foreach (var field in _fields.OrderBy(x => x.Key))
+            foreach (var field in _fields)
             {
                 if (field.Value != null
                     && field.Value.Tag != Tags.BeginString
@@ -614,22 +614,20 @@ namespace QuickFix
 
         public virtual string CalculateString()
         {
-            var stringBuilder = StringBuilderBuffer.Dequeue();
-            stringBuilder.Clear();
-            var result = CalculateString(stringBuilder, FieldOrder ?? new int[0]);
-            StringBuilderBuffer.Enqueue(stringBuilder);
+            var result = CalculateString(_toStringBuilder.Clear(), FieldOrder ?? new int[0]);
             return result;
         }
 
         public virtual string CalculateString(StringBuilder sb, int[] preFields)
         {
             HashSet<int> groupCounterTags = new HashSet<int>(_groups.Keys);
-            
-            foreach (int preField in preFields)
+
+            for (int i = 0; i < preFields.Length; i++)
             {
+                var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    sb.Append(preField + "=" + GetString(preField)).Append(Message.SOH);
+                    sb.Append(preField).Append("=").Append(GetString(preField)).Append(Message.SOH);
                     if (groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
@@ -645,11 +643,10 @@ namespace QuickFix
                     continue;
                 if (preFields.Contains(field.Value.Tag))
                     continue; //already did this one
-                sb.Append(field.Value.Tag.ToString() + "=" + field.Value.ToString());
-                sb.Append(Message.SOH);
+                sb.Append(field.Value.Tag).Append("=").Append(field.Value).Append(Message.SOH);
             }
 
-            foreach(int counterTag in _groups.Keys)
+            foreach (int counterTag in _groups.Keys)
             {
                 if (preFields.Contains(counterTag))
                     continue; //already did this one
@@ -675,7 +672,7 @@ namespace QuickFix
         /// <returns></returns>
         public int GroupCount(int fieldNo)
         {
-            if(_groups.ContainsKey(fieldNo))
+            if (_groups.ContainsKey(fieldNo))
             {
                 return _groups[fieldNo].Count;
             }
@@ -721,7 +718,7 @@ namespace QuickFix
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _fields.OrderBy(x=>x.Key).GetEnumerator();
+            return _fields.OrderBy(x => x.Key).GetEnumerator();
         }
 
         #endregion

@@ -21,10 +21,7 @@ namespace QuickFix
 
         public override string CalculateString()
         {
-            var stringBuilder = StringBuilderBuffer.Dequeue();
-            stringBuilder.Clear();
-            var result = CalculateString(stringBuilder, HEADER_FIELD_ORDER);
-            StringBuilderBuffer.Enqueue(stringBuilder);
+            var result = CalculateString(_toStringBuilder.Clear(), HEADER_FIELD_ORDER);
             return result;
         }
 
@@ -48,7 +45,8 @@ namespace QuickFix
 
         public override string CalculateString()
         {
-            return base.CalculateString(new StringBuilder(), TRAILER_FIELD_ORDER);
+            var result = base.CalculateString(_toStringBuilder.Clear(), TRAILER_FIELD_ORDER);
+            return result;
         }
 
         public override string CalculateString(StringBuilder sb, int[] preFields)

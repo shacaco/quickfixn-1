@@ -71,10 +71,7 @@ namespace QuickFix
 
         public override string CalculateString()
         {
-            var stringBuilder = StringBuilderBuffer.Dequeue();
-            stringBuilder.Clear();
-            var result = CalculateString(stringBuilder, _fieldOrder ?? new int[] { _delim });// 802 shouldn't be in _fieldOrder
-            StringBuilderBuffer.Enqueue(stringBuilder);
+            var result = CalculateString(_toStringBuilder.Clear(), _fieldOrder ?? new int[] { _delim });// 802 shouldn't be in _fieldOrder
             return result;
         }
 

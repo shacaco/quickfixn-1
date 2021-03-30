@@ -104,10 +104,11 @@ namespace QuickFix.Fields
 
             int sum = 0;
             byte[] array = CharEncoding.DefaultEncoding.GetBytes(_stringField);
-            foreach (byte b in array)
+            for (int i = 0; i < array.Length; i++)
             {
-                sum += b;
+                sum += array[i];
             }
+
             return (sum + 1); // +1 for SOH
         }
 
