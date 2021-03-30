@@ -618,17 +618,21 @@ namespace QuickFix
             return result;
         }
 
+        private readonly HashSet<int> _groupCounterTags = new HashSet<int>();
         public virtual string CalculateString(StringBuilder sb, int[] preFields)
         {
-            HashSet<int> groupCounterTags = new HashSet<int>(_groups.Keys);
+            _groupCounterTags.Clear();
+            if (_groups.Keys.Count > 0)
+                foreach (var key in _groups.Keys)
+                    _groupCounterTags.Add(key);
 
             for (int i = 0; i < preFields.Length; i++)
             {
                 var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    sb.Append(preField).Append("=").Append(GetString(preField)).Append(Message.SOH);
-                    if (groupCounterTags.Contains(preField))
+                    sb.Append(_fields[preField].toStringField()).Append(Message.SOH);
+                    if (_groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
                         foreach (Group g in glist)
@@ -639,11 +643,11 @@ namespace QuickFix
 
             foreach (var field in _fields.OrderBy(x => x.Key))
             {
-                if (groupCounterTags.Contains(field.Value.Tag))
+                if (_groupCounterTags.Contains(field.Value.Tag))
                     continue;
                 if (preFields.Contains(field.Value.Tag))
                     continue; //already did this one
-                sb.Append(field.Value.Tag).Append("=").Append(field.Value).Append(Message.SOH);
+                sb.Append(field.Value.toStringField()).Append(Message.SOH);
             }
 
             foreach (int counterTag in _groups.Keys)
