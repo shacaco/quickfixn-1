@@ -659,8 +659,7 @@ namespace QuickFix
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
 
-                sb.Append(_fields[counterTag].toStringField());
-                sb.Append(Message.SOH);
+                sb.Append(_fields[counterTag].toStringField()).Append(Message.SOH);
 
                 foreach (Group group in groupList)
                     sb.Append(group.CalculateString());
