@@ -11,7 +11,7 @@ namespace QuickFix.Fields
         private DateTimeField()
             : base(-1, DateTime.MinValue) { }
 
-        protected readonly TimeStampPrecision timePrecision = TimeStampPrecision.Millisecond;
+        protected TimeStampPrecision timePrecision = TimeStampPrecision.Millisecond;
         public DateTimeField(int tag)
             : base(tag, new DateTime()) {}
 
@@ -34,6 +34,12 @@ namespace QuickFix.Fields
 
         public void setValue(DateTime dt)
         { Obj = dt; }
+
+        public void setValue(DateTime dt, TimeStampPrecision timeFormatPrecision)
+        { 
+            Obj = dt;
+            timePrecision = timeFormatPrecision;
+        }
 
         protected override string makeString()
         {

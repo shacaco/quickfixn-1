@@ -1499,38 +1499,63 @@ namespace QuickFix
             reject.SetField(new Fields.Text(text));
         }
 
+        private static StringField GetStringField(int tag, string value)
+        {
+            var field = StringField.Factory.GetNext();
+            field.Tag = tag;
+            field.setValue(value);
+            return field;
+        }
+
+        private static IntField GetIntField(int tag, int value)
+        {
+            var field = IntField.Factory.GetNext();
+            field.Tag = tag;
+            field.setValue(value);
+            return field;
+        }
+
+        private static DateTimeField GetDateTimeField(int tag, DateTime value, TimeStampPrecision precision)
+        {
+            var field = DateTimeField.Factory.GetNext();
+            field.Tag = tag;
+            field.setValue(value, precision);
+            return field;
+        }
+
         /// <summary>
-        /// FIXME don't do so much operator new here
+        /// 
         /// </summary>
         /// <param name="m"></param>
         /// <param name="msgSeqNum"></param>
         protected void InitializeHeader(Message m, int msgSeqNum)
         {
             state_.LastSentTimeDT = MyDateTime.PreciseDateTime.NowUTC;
-            m.Header.SetField(new Fields.BeginString(this.SessionID.BeginString));
-            m.Header.SetField(new Fields.SenderCompID(this.SessionID.SenderCompID));
+            m.Header.SetField(GetStringField(BeginString.TAG, this.SessionID.BeginString));
+            m.Header.SetField(GetStringField(SenderCompID.TAG, this.SessionID.SenderCompID));
             if (SessionID.IsSet(this.SessionID.SenderSubID))
-                m.Header.SetField(new Fields.SenderSubID(this.SessionID.SenderSubID));
+                m.Header.SetField(GetStringField(SenderSubID.TAG, this.SessionID.SenderSubID));
             if (SessionID.IsSet(this.SessionID.SenderLocationID))
-                m.Header.SetField(new Fields.SenderLocationID(this.SessionID.SenderLocationID));
-            m.Header.SetField(new Fields.TargetCompID(this.SessionID.TargetCompID));
+                m.Header.SetField(GetStringField(SenderLocationID.TAG, this.SessionID.SenderLocationID));
+            m.Header.SetField(GetStringField(TargetCompID.TAG, this.SessionID.TargetCompID));
             if (SessionID.IsSet(this.SessionID.TargetSubID))
-                m.Header.SetField(new Fields.TargetSubID(this.SessionID.TargetSubID));
+                m.Header.SetField(GetStringField(TargetSubID.TAG, this.SessionID.TargetSubID));
             if (SessionID.IsSet(this.SessionID.TargetLocationID))
-                m.Header.SetField(new Fields.TargetLocationID(this.SessionID.TargetLocationID));
+                m.Header.SetField(GetStringField(TargetLocationID.TAG, this.SessionID.TargetLocationID));
 
             if (msgSeqNum > 0)
-                m.Header.SetField(new Fields.MsgSeqNum(msgSeqNum));
+                m.Header.SetField(GetIntField(MsgSeqNum.TAG, msgSeqNum));
             else
-                m.Header.SetField(new Fields.MsgSeqNum(state_.GetNextSenderMsgSeqNum()));
+                m.Header.SetField(GetIntField(MsgSeqNum.TAG, state_.GetNextSenderMsgSeqNum()));
 
             if (this.EnableLastMsgSeqNumProcessed && !m.Header.IsSetField(Tags.LastMsgSeqNumProcessed))
             {
-                m.Header.SetField(new LastMsgSeqNumProcessed(this.NextTargetMsgSeqNum - 1));
+                m.Header.SetField(GetIntField(LastMsgSeqNumProcessed.TAG, this.NextTargetMsgSeqNum - 1));
             }
 
             InsertSendingTime(m.Header);
         }
+
         protected void InitializeHeader(Message m)
         {
             InitializeHeader(m, 0);
@@ -1538,13 +1563,13 @@ namespace QuickFix
 
         protected void InsertSendingTime(FieldMap header)
         {
-            bool fix42OrAbove = false;
+            bool fix42OrAbove;
             if (this.SessionID.BeginString == FixValues.BeginString.FIXT11)
                 fix42OrAbove = true;
             else
                 fix42OrAbove = this.SessionID.BeginString.CompareTo(FixValues.BeginString.FIX42) >= 0;
 
-            header.SetField(new Fields.SendingTime(MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
+            header.SetField(GetDateTimeField(SendingTime.TAG, MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
         }
 
         protected void Persist(Message message, string messageString)
