@@ -1499,13 +1499,7 @@ namespace QuickFix
             reject.SetField(new Fields.Text(text));
         }
 
-        private static StringField GetStringField(int tag, string value)
-        {
-            var field = StringField.Factory.GetNext();
-            field.Tag = tag;
-            field.setValue(value);
-            return field;
-        }
+     
 
         private static IntField GetIntField(int tag, int value)
         {
@@ -1531,17 +1525,18 @@ namespace QuickFix
         protected void InitializeHeader(Message m, int msgSeqNum)
         {
             state_.LastSentTimeDT = MyDateTime.PreciseDateTime.NowUTC;
-            m.Header.SetField(GetStringField(BeginString.TAG, this.SessionID.BeginString));
-            m.Header.SetField(GetStringField(SenderCompID.TAG, this.SessionID.SenderCompID));
-            if (SessionID.IsSet(this.SessionID.SenderSubID))
-                m.Header.SetField(GetStringField(SenderSubID.TAG, this.SessionID.SenderSubID));
-            if (SessionID.IsSet(this.SessionID.SenderLocationID))
-                m.Header.SetField(GetStringField(SenderLocationID.TAG, this.SessionID.SenderLocationID));
-            m.Header.SetField(GetStringField(TargetCompID.TAG, this.SessionID.TargetCompID));
-            if (SessionID.IsSet(this.SessionID.TargetSubID))
-                m.Header.SetField(GetStringField(TargetSubID.TAG, this.SessionID.TargetSubID));
-            if (SessionID.IsSet(this.SessionID.TargetLocationID))
-                m.Header.SetField(GetStringField(TargetLocationID.TAG, this.SessionID.TargetLocationID));
+            
+            m.Header.SetField(this.SessionID.FieldsDictionary[BeginString.TAG]);
+            m.Header.SetField(this.SessionID.FieldsDictionary[SenderCompID.TAG]);
+            if (this.SessionID.FieldsDictionary.TryGetValue(SenderSubID.TAG, out var f1))
+                m.Header.SetField(f1);
+            if (this.SessionID.FieldsDictionary.TryGetValue(SenderLocationID.TAG, out var f2))
+                m.Header.SetField(f2);
+            m.Header.SetField(this.SessionID.FieldsDictionary[TargetCompID.TAG]);
+            if (this.SessionID.FieldsDictionary.TryGetValue(TargetSubID.TAG, out var f3))
+                m.Header.SetField(f3);
+            if (this.SessionID.FieldsDictionary.TryGetValue(TargetLocationID.TAG, out var f4))
+                m.Header.SetField(f4);
 
             if (msgSeqNum > 0)
                 m.Header.SetField(GetIntField(MsgSeqNum.TAG, msgSeqNum));

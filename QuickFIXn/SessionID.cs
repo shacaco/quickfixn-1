@@ -1,5 +1,7 @@
 ﻿
+using QuickFix.Fields;
 using System;
+using System.Collections.Generic;
 
 namespace QuickFix
 {
@@ -13,7 +15,9 @@ namespace QuickFix
     public class SessionID
     {
         #region Properties
-        
+
+        public Dictionary<int, IField> FieldsDictionary { get; } = new Dictionary<int, IField>();
+
         public string BeginString
         {
             get { return beginString_; }
@@ -116,6 +120,30 @@ namespace QuickFix
                 + (IsSet(targetLocationID_) ? "/" + targetLocationID_ : "");
             if (null != sessionQualifier_ && sessionQualifier_.Length > 0)
                 id_ += ":" + sessionQualifier_;
+            PopulateFieldsDictionary();
+        }
+
+        protected void PopulateFieldsDictionary()
+        {
+            FieldsDictionary.Add(Fields.BeginString.TAG, GetStringField(Fields.BeginString.TAG, BeginString));
+            FieldsDictionary.Add(Fields.SenderCompID.TAG, GetStringField(Fields.SenderCompID.TAG, SenderCompID));
+            if (IsSet(SenderSubID))
+                FieldsDictionary.Add(Fields.SenderSubID.TAG, GetStringField(Fields.SenderSubID.TAG, SenderSubID));
+            if (IsSet(SenderLocationID))
+                FieldsDictionary.Add(Fields.SenderLocationID.TAG, GetStringField(Fields.SenderLocationID.TAG, SenderLocationID)); 
+            FieldsDictionary.Add(Fields.TargetCompID.TAG, GetStringField(Fields.TargetCompID.TAG, TargetCompID));
+            if (IsSet(TargetSubID))
+                FieldsDictionary.Add(Fields.TargetSubID.TAG, GetStringField(Fields.TargetSubID.TAG, TargetSubID)); 
+            if (IsSet(TargetLocationID))
+                FieldsDictionary.Add(Fields.TargetLocationID.TAG, GetStringField(Fields.TargetLocationID.TAG, TargetLocationID));
+        }
+
+        private static StringField GetStringField(int tag, string value)
+        {
+            var field = StringField.Factory.GetNext();
+            field.Tag = tag;
+            field.setValue(value);
+            return field;
         }
 
         public SessionID(string beginString, string senderCompID, string targetCompID)
