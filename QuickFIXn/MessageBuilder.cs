@@ -4,19 +4,18 @@ namespace QuickFix
 {
     internal class MessageBuilder
     {
-        private readonly bool _validateLengthAndChecksum;
         private readonly DataDictionary.DataDictionary _sessionDD;
         private readonly DataDictionary.DataDictionary _appDD;
         private readonly IMessageFactory _msgFactory;
         private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
 
-        private QuickFix.Fields.MsgType _msgType;
+        private StringField _msgType;
         private string _beginString;
         private string _msgStr;
         private Message _message;
 
         public string OriginalString => _msgStr;
-        public QuickFix.Fields.MsgType MsgType => _msgType;
+        public StringField MsgType => _msgType;
 
         /// <summary>
         /// The BeginString from the raw FIX message
@@ -24,22 +23,20 @@ namespace QuickFix
         public string BeginString { get { return _beginString; } }
 
         internal MessageBuilder(string defaultApplVerId,
-            bool validateLengthAndChecksum,
             DataDictionary.DataDictionary sessionDD,
             DataDictionary.DataDictionary appDD,
             IMessageFactory msgFactory)
         {
             _defaultApplVerId = new ApplVerID(defaultApplVerId);
-            _validateLengthAndChecksum = validateLengthAndChecksum;
             _sessionDD = sessionDD;
             _appDD = appDD;
             _msgFactory = msgFactory;
         }
 
-        internal Message Build()
+        internal Message Build(bool validateLengthAndChecksum)
         {
             _message = _msgFactory.Create(_beginString, _defaultApplVerId, _msgType.Obj);
-            _message.FromString(_msgStr, _validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory);
+            _message.FromString(_msgStr, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory);
             return _message;
         }
 

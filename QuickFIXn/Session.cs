@@ -309,7 +309,7 @@ namespace QuickFix
             {
                 sessions_[this.SessionID] = this;
             }
-            _messageBuilder = new MessageBuilder(SenderDefaultApplVerID, ValidateLengthAndChecksum, SessionDataDictionary, ApplicationDataDictionary, msgFactory_);
+            _messageBuilder = new MessageBuilder(SenderDefaultApplVerID, SessionDataDictionary, ApplicationDataDictionary, msgFactory_);
 
             this.Log.OnEvent("Created session");
         }
@@ -588,7 +588,7 @@ namespace QuickFix
 
             try
             {
-                message = msgBuilder.Build();
+                message = msgBuilder.Build(ValidateLengthAndChecksum);
 
                 if (appDoesEarlyIntercept_)
                     ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);

@@ -131,9 +131,12 @@ namespace QuickFix
         /// <param name="fixstring">the FIX string to parse</param>
         /// <returns>the message type as a MsgType object</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static MsgType IdentifyType(string fixstring)
+        public static StringField IdentifyType(string fixstring)
         {
-            return new MsgType(GetMsgType(fixstring));
+            var f = StringField.Factory.GetNext();
+            f.Tag = MsgType.TAG;
+            f.setValue(GetMsgType(fixstring));
+            return f;
         }
 
         public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
