@@ -14,9 +14,8 @@ namespace QuickFix
     /// </summary>
     public class FileStoreAsync : IMessageStore
     {
-        private class MsgDef
+        private struct MsgDef
         {
-            internal static FactoryRepo<MsgDef> Factory = new FactoryRepo<MsgDef>(65536, () => new MsgDef(), 65000);
             public long index { get; internal set; }
             public int size { get; internal set; }
 
@@ -25,8 +24,6 @@ namespace QuickFix
                 this.index = index;
                 this.size = size;
             }
-            private MsgDef()
-            { }
         }
 
         private readonly object _lock = new object();
@@ -47,7 +44,7 @@ namespace QuickFix
         private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
         private string _lastSequence;
         private ConcurrentQueue<ValueTuple<string, int>> _setsToWrite = new ConcurrentQueue<ValueTuple<string, int>>();
-        private readonly ProducerConsumerBuffer<StringBuilder> SeqMsgBuffer = new ProducerConsumerBuffer<StringBuilder>(4, true, true, () => new StringBuilder(0.ToString("D10") + " : " + 0.ToString("D10") + " "));
+        private readonly StringBuilder SeqMsgBuffer = new StringBuilder(0.ToString("D10") + " : " + 0.ToString("D10") + " ");
         private readonly StringBuilder _setBuffer = new StringBuilder();
         private readonly Thread _setThread;
 
@@ -283,25 +280,21 @@ namespace QuickFix
                         headerFile_.WriteLine(_setBuffer.ToString());
                         headerFile_.Flush();
 
-                        var offsetObject = MsgDef.Factory.GetNext();
-                        offsetObject.index = offset;
-                        offsetObject.size = size;
+                        var offsetObject = new MsgDef(offset, size);
                         offsets_[msgSeqNum] = offsetObject;
 
                         msgFile_.Write(msgBytes, 0, size);
                         msgFile_.Flush();
                     }
 
-                    var buffer = SeqMsgBuffer.Dequeue();
-                    buffer.Remove(0, 10);
-                    buffer.Insert(0, GetNextSenderMsgSeqNum().ToString("D10"));
-                    buffer.Remove(13, 10);
-                    buffer.Insert(13, GetNextTargetMsgSeqNum().ToString("D10"));
+                    SeqMsgBuffer.Remove(0, 10);
+                    SeqMsgBuffer.Insert(0, GetNextSenderMsgSeqNum().ToString("D10"));
+                    SeqMsgBuffer.Remove(13, 10);
+                    SeqMsgBuffer.Insert(13, GetNextTargetMsgSeqNum().ToString("D10"));
 
                     seqNumsWriter_.BaseStream.Seek(0, System.IO.SeekOrigin.Begin);
-                    seqNumsWriter_.Write(buffer.ToString());
+                    seqNumsWriter_.Write(SeqMsgBuffer.ToString());
                     seqNumsWriter_.Flush();
-                    SeqMsgBuffer.Enqueue(buffer);
                 }
             }
         }
