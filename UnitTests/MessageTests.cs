@@ -848,7 +848,7 @@ namespace UnitTests
             grp.QuoteEntryID = new QuoteEntryID("15467902");
             msg.AddGroup(grp);
 
-            string msgString = msg.ToString();
+            string msgString = msg.ToString(true);
 
             string expected = String.Join(Message.SOH, new string[] { "35=W", "22=4", "48=BE0932900518", "55=[N/A]", "262=1b145288-9c9a-4911-a084-7341c69d3e6b", "762=EURO_EUR", "268=2",
                 "269=0", "270=97.625", "15=EUR", "271=1246000", "272=20121024", "273=07:30:47", "276=I", "282=BEARGB21XXX", "299=15478575",

@@ -4,6 +4,7 @@ using System.IO;
 using System.Xml;
 using NUnit.Framework;
 using QuickFix;
+using QuickFix.Fields;
 using UnitTests.TestHelpers;
 
 namespace UnitTests
@@ -356,7 +357,7 @@ namespace UnitTests
                 + "52=20111012-22:15:55.474" + nul + "56=EXECUTOR" + nul + "148=AAAAAAA" + nul
                 + "33=2" + nul + "58=L1" + nul + "58=L2" + nul + "10=016" + nul;
 
-            QuickFix.Fields.MsgType msgType = Message.IdentifyType(msgStr);
+            StringField msgType = Message.IdentifyType(msgStr);
             string beginString = Message.ExtractBeginString(msgStr);
 
             Message message = f.Create(beginString, msgType.Obj);

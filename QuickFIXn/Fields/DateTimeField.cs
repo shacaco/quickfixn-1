@@ -6,7 +6,7 @@ namespace QuickFix.Fields
 {
     public class DateTimeField : FieldBase<DateTime>
     {
-        public static readonly FactoryRepo<DateTimeField> Factory = new FactoryRepo<DateTimeField>(500000, () => new DateTimeField(), 499000);
+        public static readonly FactoryRepo<DateTimeField> Factory = new FactoryRepo<DateTimeField>(100000, () => new DateTimeField(), 99000);
 
         private DateTimeField()
             : base(-1, DateTime.MinValue) { }

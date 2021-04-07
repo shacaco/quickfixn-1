@@ -53,6 +53,7 @@ namespace QuickFix
         public const string TRANSPORT_DATA_DICTIONARY = "TransportDataDictionary";
         public const string APP_DATA_DICTIONARY = "AppDataDictionary";
         public const string PERSIST_MESSAGES = "PersistMessages";
+        public const string ORDER_BODY_FIELDS_ON_SEND = "OrderBodyFieldsOnSend";
         public const string LOGON_TIMEOUT = "LogonTimeout";
         public const string LOGOUT_TIMEOUT = "LogoutTimeout";
         public const string SEND_REDUNDANT_RESENDREQUESTS = "SendRedundantResendRequests";

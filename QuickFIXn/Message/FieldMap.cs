@@ -612,14 +612,14 @@ namespace QuickFix
             return total;
         }
 
-        public virtual string CalculateString()
+        public virtual string CalculateString(bool orderPostFieldOrder)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), FieldOrder ?? new int[0]);
+            var result = CalculateString(_toStringBuilder.Clear(), FieldOrder ?? new int[0], orderPostFieldOrder);
             return result;
         }
 
         private readonly HashSet<int> _groupCounterTags = new HashSet<int>();
-        public virtual string CalculateString(StringBuilder sb, int[] preFields)
+        public virtual string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFields)
         {
             _groupCounterTags.Clear();
             if (_groups.Keys.Count > 0)
@@ -636,18 +636,32 @@ namespace QuickFix
                     {
                         List<Group> glist = _groups[preField];
                         foreach (Group g in glist)
-                            sb.Append(g.CalculateString());
+                            sb.Append(g.CalculateString(true));
                     }
                 }
             }
 
-            foreach (var field in _fields.OrderBy(x => x.Key))
+            if(orderPostFields)
             {
-                if (_groupCounterTags.Contains(field.Value.Tag))
-                    continue;
-                if (preFields.Contains(field.Value.Tag))
-                    continue; //already did this one
-                sb.Append(field.Value.toStringField()).Append(Message.SOH);
+                foreach (var field in _fields.OrderBy(x => x.Key))
+                {
+                    if (_groupCounterTags.Contains(field.Value.Tag))
+                        continue;
+                    if (preFields.Contains(field.Value.Tag))
+                        continue; //already did this one
+                    sb.Append(field.Value.toStringField()).Append(Message.SOH);
+                }
+            }
+            else
+            {
+                foreach (var field in _fields)
+                {
+                    if (_groupCounterTags.Contains(field.Value.Tag))
+                        continue;
+                    if (preFields.Contains(field.Value.Tag))
+                        continue; //already did this one
+                    sb.Append(field.Value.toStringField()).Append(Message.SOH);
+                }
             }
 
             foreach (int counterTag in _groups.Keys)
@@ -662,7 +676,7 @@ namespace QuickFix
                 sb.Append(_fields[counterTag].toStringField()).Append(Message.SOH);
 
                 foreach (Group group in groupList)
-                    sb.Append(group.CalculateString());
+                    sb.Append(group.CalculateString(true));
             }
 
             return sb.ToString();
@@ -712,7 +726,7 @@ namespace QuickFix
 
         public IEnumerator<KeyValuePair<int, IField>> GetEnumerator()
         {
-            return _fields.OrderBy(x => x.Key).GetEnumerator();
+            return _fields.GetEnumerator();
         }
 
         #endregion
@@ -721,7 +735,7 @@ namespace QuickFix
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return _fields.OrderBy(x => x.Key).GetEnumerator();
+            return _fields.GetEnumerator();
         }
 
         #endregion

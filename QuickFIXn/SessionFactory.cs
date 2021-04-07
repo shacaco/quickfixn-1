@@ -87,7 +87,10 @@ namespace QuickFix
                 else
                     ProcessFixDataDictionary(sessionID, settings, dd);
             }
-
+            else
+            {
+                dd.SetSettings(settings);
+            }
             int heartBtInt = 0;
             if (isInitiator)
             {
@@ -137,6 +140,8 @@ namespace QuickFix
                 session.RefreshOnLogon = settings.GetBool(SessionSettings.REFRESH_ON_LOGON);
             if (settings.Has(SessionSettings.PERSIST_MESSAGES))
                 session.PersistMessages = settings.GetBool(SessionSettings.PERSIST_MESSAGES);
+            if (settings.Has(SessionSettings.ORDER_BODY_FIELDS_ON_SEND))
+                session.OrderBodyFieldsOnSend = settings.GetBool(SessionSettings.ORDER_BODY_FIELDS_ON_SEND);
             if (settings.Has(SessionSettings.MILLISECONDS_IN_TIMESTAMP))
                 session.MillisecondsInTimeStamp = settings.GetBool(SessionSettings.MILLISECONDS_IN_TIMESTAMP);
             if( settings.Has( SessionSettings.TIMESTAMP_PRECISION ) )

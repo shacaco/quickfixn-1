@@ -69,15 +69,15 @@ namespace QuickFix
             private set { _delim = value; }
         }
 
-        public override string CalculateString()
+        public override string CalculateString(bool orderPostFieldOrder)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), _fieldOrder ?? new int[] { _delim });// 802 shouldn't be in _fieldOrder
+            var result = CalculateString(_toStringBuilder.Clear(), _fieldOrder ?? new int[] { _delim }, orderPostFieldOrder);// 802 shouldn't be in _fieldOrder
             return result;
         }
 
         public override string ToString()
         {
-            return CalculateString();
+            return CalculateString(true);
         }
 
         #region Private Members

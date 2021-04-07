@@ -53,5 +53,8 @@
     <Reference Include="MyDateTime">
       <HintPath>..\..\MyDateTime\MyDateTime\MyDateTime\bin\Release\netstandard2.0\MyDateTime.dll</HintPath>
     </Reference>
+    <Reference Include="Utils">
+      <HintPath>..\..\Utils\Utils\Utils\bin\Release\netstandard2.0\Utils.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

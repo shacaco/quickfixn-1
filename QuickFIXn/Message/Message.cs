@@ -19,15 +19,15 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString()
+        public override string CalculateString(bool orderPostFieldOrder)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), HEADER_FIELD_ORDER);
+            var result = CalculateString(_toStringBuilder.Clear(), HEADER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields)
+        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
-            return base.CalculateString(sb, HEADER_FIELD_ORDER);
+            return base.CalculateString(sb, HEADER_FIELD_ORDER, orderPostFieldOrder);
         }
     }
 
@@ -43,15 +43,15 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString()
+        public override string CalculateString(bool orderPostFieldOrder)
         {
-            var result = base.CalculateString(_toStringBuilder.Clear(), TRAILER_FIELD_ORDER);
+            var result = base.CalculateString(_toStringBuilder.Clear(), TRAILER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields)
+        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
-            return base.CalculateString(sb, TRAILER_FIELD_ORDER);
+            return base.CalculateString(sb, TRAILER_FIELD_ORDER, orderPostFieldOrder);
         }
     }
 
@@ -812,12 +812,17 @@ namespace QuickFix
         private Object lock_ToString = new Object();
         public override string ToString()
         {
+            return ToString(false);
+        }
+
+        public string ToString(bool orderBodyPostFieldOrder)
+        {
             lock (lock_ToString)
             {
                 this.Header.SetField(new BodyLength(BodyLength()), true);
                 this.Trailer.SetField(new CheckSum(Fields.Converters.CheckSumConverter.Convert(CheckSum())), true);
 
-                return this.Header.CalculateString() + CalculateString() + this.Trailer.CalculateString();
+                return this.Header.CalculateString(true) + CalculateString(orderBodyPostFieldOrder) + this.Trailer.CalculateString(true);
             }
         }
 
@@ -832,7 +837,7 @@ namespace QuickFix
             string name = string.Empty;
 
             // fields
-            foreach (var f in fields)
+            foreach (var f in fields.OrderBy(i=>i.Key))
             {
                s.Append("<field ");
                if ((dd != null) && ( dd.FieldsByTag.ContainsKey(f.Key)))

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using My_Collections;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
 
@@ -128,6 +127,11 @@ namespace QuickFix
         /// to always send GapFills instead of resending messages.
         /// </summary>
         public bool PersistMessages { get; set; }
+
+        /// <summary>
+        /// Whether to order body fields by tag number when sending to counterparty
+        /// </summary>
+        public bool OrderBodyFieldsOnSend { get; set; }
 
         /// <summary>
         /// Determines if session state should be restored from persistance
@@ -286,6 +290,7 @@ namespace QuickFix
             // Configuration defaults.
             // Will be overridden by the SessionFactory with values in the user's configuration.
             this.PersistMessages = true;
+            this.OrderBodyFieldsOnSend = true;
             this.ResetOnDisconnect = false;
             this.SendRedundantResendRequests = false;
             this.ResendSessionLevelRejects = false;
@@ -553,8 +558,10 @@ namespace QuickFix
         /// <param name="msgStr"></param>
         public void Next(string msgStr)
         {
+            Utils.StopWatchRepo.TryStartWatch(out int id);
             NextMessage(msgStr);
             NextQueued();
+            Utils.StopWatchRepo.TryStopWatch("Session.Next", id);
         }
 
         /// <summary>
@@ -952,7 +959,7 @@ namespace QuickFix
         }
 
         public bool Verify(Message message)
-        {
+        {        
             return Verify(message, true, true);
         }
 
@@ -1499,33 +1506,28 @@ namespace QuickFix
             reject.SetField(new Fields.Text(text));
         }
 
-     
 
-        private static IntField GetIntField(int tag, int value)
+
+        private static IntField GetIntField(IntField reusable, int tag, int value)
         {
-            var field = IntField.Factory.GetNext();
+            var field = reusable ?? IntField.Factory.GetNext();
             field.Tag = tag;
             field.setValue(value);
             return field;
         }
 
-        private static DateTimeField GetDateTimeField(int tag, DateTime value, TimeStampPrecision precision)
+        private static DateTimeField GetDateTimeField(DateTimeField reusable, int tag, DateTime value, TimeStampPrecision precision)
         {
-            var field = DateTimeField.Factory.GetNext();
+            var field = reusable ?? DateTimeField.Factory.GetNext();
             field.Tag = tag;
             field.setValue(value, precision);
             return field;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="m"></param>
-        /// <param name="msgSeqNum"></param>
-        protected void InitializeHeader(Message m, int msgSeqNum)
+        protected void InitializeHeader(Message m, int msgSeqNum, IntField reusableMsgNum = null, IntField reusableLastMsgSeqNumProcessed = null, DateTimeField reusableSendingTime = null)
         {
             state_.LastSentTimeDT = MyDateTime.PreciseDateTime.NowUTC;
-            
+
             m.Header.SetField(this.SessionID.FieldsDictionary[BeginString.TAG]);
             m.Header.SetField(this.SessionID.FieldsDictionary[SenderCompID.TAG]);
             if (this.SessionID.FieldsDictionary.TryGetValue(SenderSubID.TAG, out var f1))
@@ -1539,24 +1541,24 @@ namespace QuickFix
                 m.Header.SetField(f4);
 
             if (msgSeqNum > 0)
-                m.Header.SetField(GetIntField(MsgSeqNum.TAG, msgSeqNum));
+                m.Header.SetField(GetIntField(reusableMsgNum, MsgSeqNum.TAG, msgSeqNum));
             else
-                m.Header.SetField(GetIntField(MsgSeqNum.TAG, state_.GetNextSenderMsgSeqNum()));
+                m.Header.SetField(GetIntField(reusableMsgNum, MsgSeqNum.TAG, state_.GetNextSenderMsgSeqNum()));
 
             if (this.EnableLastMsgSeqNumProcessed && !m.Header.IsSetField(Tags.LastMsgSeqNumProcessed))
             {
-                m.Header.SetField(GetIntField(LastMsgSeqNumProcessed.TAG, this.NextTargetMsgSeqNum - 1));
+                m.Header.SetField(GetIntField(reusableLastMsgSeqNumProcessed, LastMsgSeqNumProcessed.TAG, this.NextTargetMsgSeqNum - 1));
             }
 
-            InsertSendingTime(m.Header);
+            InsertSendingTime(m.Header, reusableSendingTime);
         }
 
         protected void InitializeHeader(Message m)
         {
-            InitializeHeader(m, 0);
+            InitializeHeader(m, 0, null, null, null);
         }
 
-        protected void InsertSendingTime(FieldMap header)
+        protected void InsertSendingTime(FieldMap header, DateTimeField reusableSendingTime = null)
         {
             bool fix42OrAbove;
             if (this.SessionID.BeginString == FixValues.BeginString.FIXT11)
@@ -1564,7 +1566,7 @@ namespace QuickFix
             else
                 fix42OrAbove = this.SessionID.BeginString.CompareTo(FixValues.BeginString.FIX42) >= 0;
 
-            header.SetField(GetDateTimeField(SendingTime.TAG, MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
+            header.SetField(GetDateTimeField(reusableSendingTime, SendingTime.TAG, MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
         }
 
         protected void Persist(Message message, string messageString)
@@ -1664,13 +1666,16 @@ namespace QuickFix
             return AdminMsgTypes.Contains(msgType);
         }
 
+        private readonly IntField _reusableSendRawSeqNum = new IntField(MsgSeqNum.TAG);
+        private readonly IntField _reusableLastMsgSeqNumProcessed = new IntField(LastMsgSeqNumProcessed.TAG);
+        private readonly DateTimeField _reusableSendRawSendingTime = new DateTimeField(SendingTime.TAG);
         protected bool SendRaw(Message message, int seqNum)
         {
             lock (sync_)
             {
                 string msgType = message.Header.GetString(Fields.Tags.MsgType);
 
-                InitializeHeader(message, seqNum);
+                InitializeHeader(message, seqNum, _reusableSendRawSeqNum, _reusableLastMsgSeqNumProcessed, _reusableSendRawSendingTime);
 
                 if (Message.IsAdminMsgType(msgType))
                 {
@@ -1701,7 +1706,7 @@ namespace QuickFix
                     }
                 }
 
-                string messageString = message.ToString();
+                string messageString = message.ToString(OrderBodyFieldsOnSend);
                 if (0 == seqNum)
                     Persist(message, messageString);
                 return Send(messageString);

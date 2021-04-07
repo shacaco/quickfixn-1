@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using System.Threading;
+using QuickFix.Fields;
 
 namespace UnitTests
 {
@@ -23,7 +24,7 @@ namespace UnitTests
 
         public bool Send(string msgStr)
         {
-            QuickFix.Fields.MsgType msgType = QuickFix.Message.IdentifyType(msgStr);
+            StringField msgType = QuickFix.Message.IdentifyType(msgStr);
             string beginString = QuickFix.Message.ExtractBeginString(msgStr);
 
             QuickFix.Message message = messageFactory.Create(beginString, msgType.Obj);

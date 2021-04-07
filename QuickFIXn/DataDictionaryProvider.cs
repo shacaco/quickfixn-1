@@ -23,6 +23,18 @@ namespace QuickFix
             emptyDataDictionary_ = new DataDictionary.DataDictionary(src.emptyDataDictionary_);
         }
 
+        public void SetSettings(Dictionary settings)
+        {
+            if (settings.Has(SessionSettings.VALIDATE_FIELDS_OUT_OF_ORDER))
+                emptyDataDictionary_.CheckFieldsOutOfOrder = settings.GetBool(SessionSettings.VALIDATE_FIELDS_OUT_OF_ORDER);
+            if (settings.Has(SessionSettings.VALIDATE_FIELDS_HAVE_VALUES))
+                emptyDataDictionary_.CheckFieldsHaveValues = settings.GetBool(SessionSettings.VALIDATE_FIELDS_HAVE_VALUES);
+            if (settings.Has(SessionSettings.VALIDATE_USER_DEFINED_FIELDS))
+                emptyDataDictionary_.CheckUserDefinedFields = settings.GetBool(SessionSettings.VALIDATE_USER_DEFINED_FIELDS);
+            if (settings.Has(SessionSettings.ALLOW_UNKNOWN_MSG_FIELDS))
+                emptyDataDictionary_.AllowUnknownMessageFields = settings.GetBool(SessionSettings.ALLOW_UNKNOWN_MSG_FIELDS);
+        }
+
         public void AddTransportDataDictionary(string beginString, DataDictionary.DataDictionary dataDictionary)
         {
             transportDataDictionaries_[beginString] = dataDictionary;
