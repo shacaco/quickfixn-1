@@ -209,15 +209,16 @@ namespace QuickFix.DataDictionary
             }
 
             // check contents of each group
-            foreach (int groupTag in map.GetGroupTags())
-            {
-                for (int i = 1; i <= map.GroupCount(groupTag); i++)
+            if (map.GetGroupsCount() > 0)
+                foreach (int groupTag in map.GetGroupTags())
                 {
-                    Group g = map.GetGroup(i, groupTag);
-                    DDGrp ddg = this.Messages[msgType].GetGroup(groupTag);
-                    IterateGroup(g, ddg, msgType);
+                    for (int i = 1; i <= map.GroupCount(groupTag); i++)
+                    {
+                        Group g = map.GetGroup(i, groupTag);
+                        DDGrp ddg = this.Messages[msgType].GetGroup(groupTag);
+                        IterateGroup(g, ddg, msgType);
+                    }
                 }
-            }
         }
 
         public void IterateGroup(Group group, DDGrp ddgroup, string msgType)

@@ -20,7 +20,7 @@ namespace QuickFix
         /// </summary>
         public FieldMap()
         {
-            _fields = new ConcurrentDictionary<int, Fields.IField>(); // FIXME sorted dict is a hack to get quasi-correct field order
+            _fields = new ConcurrentDictionary<int, Fields.IField>();
             _groups = new Dictionary<int, List<Group>>();
             this.RepeatedTags = new List<Fields.IField>();
         }
@@ -437,6 +437,20 @@ namespace QuickFix
         }
 
         /// <summary>
+        /// tries to get the string value of a field
+        /// </summary>
+        public bool TryGetString(int tag, out string value)
+        {
+            if (!_fields.TryGetValue(tag, out var field))
+            {
+                value = null;
+                return false;
+            }
+            value = field.ToString();
+            return true;
+        }
+
+        /// <summary>
         /// Gets the char value of a field
         /// </summary>
         /// <param name="tag">the FIX tag</param>
@@ -641,7 +655,7 @@ namespace QuickFix
                 }
             }
 
-            if(orderPostFields)
+            if (orderPostFields)
             {
                 foreach (var field in _fields.OrderBy(x => x.Key))
                 {
@@ -707,6 +721,11 @@ namespace QuickFix
         public List<int> GetGroupTags()
         {
             return new List<int>(_groups.Keys);
+        }
+
+        public int GetGroupsCount()
+        {
+            return _groups.Count;
         }
 
         #region Private Members
