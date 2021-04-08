@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using My_Collections;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
 
@@ -20,7 +18,7 @@ namespace QuickFix
         /// </summary>
         public FieldMap()
         {
-            _fields = new ConcurrentDictionary<int, Fields.IField>();
+            _fields = new Dictionary<int, Fields.IField>(100);
             _groups = new Dictionary<int, List<Group>>();
             this.RepeatedTags = new List<Fields.IField>();
         }
@@ -50,7 +48,7 @@ namespace QuickFix
         {
             this._fieldOrder = src._fieldOrder;
 
-            this._fields = new ConcurrentDictionary<int, Fields.IField>(src._fields);
+            this._fields = new Dictionary<int, Fields.IField>(src._fields);
 
             this._groups = new Dictionary<int, List<Group>>();
             foreach (KeyValuePair<int, List<Group>> g in src._groups)
@@ -84,7 +82,7 @@ namespace QuickFix
         /// <returns>true if field was removed, false otherwise</returns>
         public bool RemoveField(int field)
         {
-            return _fields.TryRemove(field, out _);
+            return _fields.Remove(field);
         }
 
         /// <summary>
@@ -729,7 +727,7 @@ namespace QuickFix
         }
 
         #region Private Members
-        private ConcurrentDictionary<int, Fields.IField> _fields; /// FIXME sorted dict is a hack to get quasi-correct field order
+        private Dictionary<int, Fields.IField> _fields; /// FIXME sorted dict is a hack to get quasi-correct field order
         private Dictionary<int, List<Group>> _groups;
         protected int[] _fieldOrder;
         #endregion

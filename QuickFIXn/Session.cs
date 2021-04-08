@@ -558,10 +558,8 @@ namespace QuickFix
         /// <param name="msgStr"></param>
         public void Next(string msgStr)
         {
-            Utils.StopWatchRepo.TryStartWatch(out int id);
             NextMessage(msgStr);
             NextQueued();
-            Utils.StopWatchRepo.TryStopWatch("Session.Next", id);
         }
 
         private object _messageReusable = new object();
@@ -573,10 +571,11 @@ namespace QuickFix
         private void NextMessage(string msgStr)
         {
             this.Log.OnIncoming(msgStr);
-
+            Utils.StopWatchRepo.TryStartWatch(out int id);
             _messageBuilder.SetData(msgStr);
             lock (_messageReusable)
                 Next(_messageBuilder);
+            Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", id);
         }
 
         /// <summary>
@@ -598,7 +597,9 @@ namespace QuickFix
 
             try
             {
+                Utils.StopWatchRepo.TryStartWatch(out int id);
                 message = msgBuilder.Build(ValidateLengthAndChecksum);
+                Utils.StopWatchRepo.TryStopWatch("Session.Next->build", id);
 
                 if (appDoesEarlyIntercept_)
                     ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
