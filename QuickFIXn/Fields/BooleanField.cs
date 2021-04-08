@@ -11,7 +11,7 @@ namespace QuickFix.Fields
     /// </summary>
     public class BooleanField : FieldBase<Boolean>
     {
-        public static readonly FactoryRepo<BooleanField> Factory = new FactoryRepo<BooleanField>(500000, () => new BooleanField(), 499000);
+        public static readonly FactoryRepo<BooleanField> Factory = new FactoryRepo<BooleanField>(10000, () => new BooleanField(), 9950);
 
         private BooleanField()
             : base(-1, false) { }

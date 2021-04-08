@@ -564,8 +564,10 @@ namespace QuickFix
             Utils.StopWatchRepo.TryStopWatch("Session.Next", id);
         }
 
+        private object _messageReusable = new object();
         /// <summary>
         /// Process a message (in string form) from the counterparty
+        /// locks _messageReusable to ensure reusable resources are not being used coccurrently
         /// </summary>
         /// <param name="msgStr"></param>
         private void NextMessage(string msgStr)
@@ -573,7 +575,8 @@ namespace QuickFix
             this.Log.OnIncoming(msgStr);
 
             _messageBuilder.SetData(msgStr);
-            Next(_messageBuilder);
+            lock (_messageReusable)
+                Next(_messageBuilder);
         }
 
         /// <summary>
@@ -959,7 +962,7 @@ namespace QuickFix
         }
 
         public bool Verify(Message message)
-        {        
+        {
             return Verify(message, true, true);
         }
 

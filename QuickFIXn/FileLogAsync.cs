@@ -28,7 +28,7 @@ namespace QuickFix
         private bool _abortTask;
         private bool _disposed;
 
-        private ProducerConsumerBuffer<char[]> _buffer = new ProducerConsumerBuffer<char[]>(2048, true, true, () => new char[400]);
+        private ProducerConsumerBuffer<char[]> _buffer = new ProducerConsumerBuffer<char[]>(4096, true, true, () => new char[400]);
         private Thread _writeThread;
         private readonly ConcurrentQueue<char[]> _messages = new ConcurrentQueue<char[]>();
         private readonly ConcurrentQueue<char[]> _events = new ConcurrentQueue<char[]>();

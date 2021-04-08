@@ -10,7 +10,7 @@ namespace QuickFix.Fields
     /// </summary>
     public class DecimalField : FieldBase<Decimal>
     {
-        public static readonly FactoryRepo<DecimalField> Factory = new FactoryRepo<DecimalField>(250000, () => new DecimalField(), 249000);
+        public static readonly FactoryRepo<DecimalField> Factory = new FactoryRepo<DecimalField>(1000000, () => new DecimalField(), 999000);
 
         private DecimalField()
             : base(-1, new Decimal(0.0)) { }

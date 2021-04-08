@@ -10,7 +10,7 @@ namespace QuickFix.Fields
     /// </summary>
     public class StringField : FieldBase<string>
     {
-        public static readonly FactoryRepo<StringField> Factory = new FactoryRepo<StringField>(4000000, ()=> new StringField(), 3998000);
+        public static readonly FactoryRepo<StringField> Factory = new FactoryRepo<StringField>(2000000, ()=> new StringField(), 1999000);
 
         private StringField()
             : base(-1, "") { }

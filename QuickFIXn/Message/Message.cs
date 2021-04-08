@@ -76,7 +76,7 @@ namespace QuickFix
 
         #region Constructors
 
-        public Message()
+        public Message() 
         {
             this.Header = new Header();
             this.Trailer = new Trailer();
@@ -129,17 +129,18 @@ namespace QuickFix
         /// Parse the message type (tag 35) from a FIX string
         /// </summary>
         /// <param name="fixstring">the FIX string to parse</param>
+        /// <param name="reusableField"></param>
         /// <returns>the message type as a MsgType object</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static StringField IdentifyType(string fixstring)
+        public static StringField IdentifyType(string fixstring, StringField reusableField = null)
         {
-            var f = StringField.Factory.GetNext();
+            var f = reusableField ?? StringField.Factory.GetNext();
             f.Tag = MsgType.TAG;
             f.setValue(GetMsgType(fixstring));
             return f;
         }
 
-        public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
+        public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
         {
             try
             {
@@ -147,7 +148,7 @@ namespace QuickFix
                 int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
                 pos = tagend + 1;
                 int fieldvalend = msgstr.IndexOf(SOH, pos);
-                StringField field = StringField.Factory.GetNext();
+                field = field ?? StringField.Factory.GetNext();
                 field.Tag = tag;
                 field.Obj = msgstr.Substring(pos, fieldvalend - pos);
 
@@ -197,10 +198,10 @@ namespace QuickFix
             return ExtractField(msgstr, ref pos, null, null);
         }
 
-        public static string ExtractBeginString(string msgstr)
+        public static string ExtractBeginString(string msgstr, StringField reusableField = null)
         {
             int i = 0;
-            return ExtractField(msgstr, ref i, null, null).Obj;
+            return ExtractField(msgstr, ref i, null, null, reusableField).Obj;
         }
 
         public static bool IsHeaderField(int tag)
@@ -390,10 +391,11 @@ namespace QuickFix
         /// <param name="sessionDD"></param>
         /// <param name="appDD"></param>
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
+        /// <param name="reusableFields"></param>
         public void FromString(string msgstr, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
+            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, StringField[] reusableFields = null)
         {
-            FromString(msgstr, validate, sessionDD, appDD, msgFactory, false);
+            FromString(msgstr, validate, sessionDD, appDD, msgFactory, false, reusableFields);
         }
 
         /// <summary>
@@ -407,9 +409,10 @@ namespace QuickFix
         /// <param name="ignoreBody">(default false) if true, ignores all non-header non-trailer fields.
         ///   Intended for callers that only need rejection-related information from the header.
         ///   </param>
+        /// <param name="reusableFields"></param>
         public void FromString(string msgstr, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
-            bool ignoreBody)
+            bool ignoreBody, StringField[] reusableFields = null)
         {
             Clear();
 
@@ -419,10 +422,10 @@ namespace QuickFix
             int count = 0;
             int pos = 0;
 	        DataDictionary.IFieldMapSpec msgMap = null;
-
+            int reusableFieldsIndex = 0;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD);
+                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
                 
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");

@@ -10,7 +10,7 @@ namespace QuickFix.Fields
     /// </summary>
     public class CharField : FieldBase<Char>
     {
-        public static readonly FactoryRepo<CharField> Factory = new FactoryRepo<CharField>(250000, () => new CharField(), 249000);
+        public static readonly FactoryRepo<CharField> Factory = new FactoryRepo<CharField>(500000, () => new CharField(), 499000);
 
         private CharField()
             : base(-1, '\0') { }
