@@ -825,7 +825,7 @@ namespace QuickFix
                 this.Header.SetField(new BodyLength(BodyLength()), true);
                 this.Trailer.SetField(new CheckSum(Fields.Converters.CheckSumConverter.Convert(CheckSum())), true);
 
-                return this.Header.CalculateString(true) + CalculateString(orderBodyPostFieldOrder) + this.Trailer.CalculateString(true);
+                return this.Header.CalculateString(orderBodyPostFieldOrder) + CalculateString(orderBodyPostFieldOrder) + this.Trailer.CalculateString(orderBodyPostFieldOrder);
             }
         }
 
