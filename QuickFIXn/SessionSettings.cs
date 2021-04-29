@@ -41,6 +41,7 @@ namespace QuickFix
         public const string FILE_STORE_PATH = "FileStorePath";
         public const string ASYNC_FILE_STORE = "AsyncFileStore";
         public const string REFRESH_ON_LOGON = "RefreshOnLogon";
+        public const string RESET_TSRGET_SEQ_ON_CREATION = "ResetTargetSeqOnCreation";
         public const string RESET_ON_LOGON = "ResetOnLogon";
         public const string RESET_ON_LOGOUT = "ResetOnLogout";
         public const string RESET_ON_DISCONNECT = "ResetOnDisconnect";

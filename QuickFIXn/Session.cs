@@ -143,6 +143,11 @@ namespace QuickFix
         /// Reset sequence numbers on logon request
         /// </summary>
         public bool ResetOnLogon { get; set; }
+     
+        /// <summary>
+        /// Reset target sequence number on session creation (used to rebuild state from server)
+        /// </summary>
+        public bool ResetTargetSeqOnCreation { get; set; }
 
         /// <summary>
         /// Reset sequence numbers to 1 after a normal logout
