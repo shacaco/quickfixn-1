@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MyDateTime;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
 
@@ -50,6 +51,8 @@ namespace QuickFix
                     || this.schedule_.IsNewSession(creationTime.Value, DateTime.UtcNow);
             }
         }
+
+        public DateTime LastIncomingMessageTime { get; private set; }
 
 
         /// <summary>
@@ -578,6 +581,7 @@ namespace QuickFix
             Utils.StopWatchRepo.TryStartWatch(out int id);
             this.Log.OnIncoming(msgStr);
             _messageBuilder.SetData(msgStr);
+            LastIncomingMessageTime = PreciseDateTime.Now;
             lock (_messageReusable)
                 Next(_messageBuilder);
             Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", id);
@@ -1745,6 +1749,7 @@ namespace QuickFix
         {
             get { return disposed_; }
         }
+
         ~Session() => Dispose(false);
     }
 }
