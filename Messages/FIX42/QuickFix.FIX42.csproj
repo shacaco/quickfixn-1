@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <Reference Include="My Collections">
-      <HintPath>..\..\..\My Collections\repo\My-Collections\My Collections\bin\Release\netstandard2.0\My Collections.dll</HintPath>
+      <HintPath>..\..\..\Utilities\Utilities\My Collections\bin\Release\netstandard2.0\My Collections.dll</HintPath>
     </Reference>
   </ItemGroup>
 
