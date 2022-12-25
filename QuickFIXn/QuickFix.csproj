@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Title>QuickFIX/n</Title>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
@@ -47,14 +47,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="My Collections">
-      <HintPath>..\..\Utilities\Utilities\My Collections\bin\Release\netstandard2.0\My Collections.dll</HintPath>
-    </Reference>
-    <Reference Include="MyDateTime">
-      <HintPath>..\..\Utilities\Utilities\MyDateTime\bin\Release\netstandard2.0\MyDateTime.dll</HintPath>
-    </Reference>
-    <Reference Include="Utils">
-      <HintPath>..\..\Utilities\Utilities\Utils\Utils\bin\Release\netstandard2.0\Utils.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\Utilities\Utilities\My Collections\My Collections.csproj" />
+    <ProjectReference Include="..\..\Utilities\Utilities\MyDateTime\MyDateTime.csproj" />
+    <ProjectReference Include="..\..\Utilities\Utilities\Utils\Utils\Utils.csproj" />
   </ItemGroup>
 </Project>

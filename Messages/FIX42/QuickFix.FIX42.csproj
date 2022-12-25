@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
     <Title>QuickFIX/n FIX4.2 Messages</Title>
     <PackageId>QuickFIXn.FIX4.2</PackageId>
@@ -22,6 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Utilities\Utilities\My Collections\My Collections.csproj" />
     <ProjectReference Include="..\..\QuickFIXn\QuickFix.csproj" />
   </ItemGroup>
 
@@ -30,12 +31,6 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="My Collections">
-      <HintPath>..\..\..\Utilities\Utilities\My Collections\bin\Release\netstandard2.0\My Collections.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>
