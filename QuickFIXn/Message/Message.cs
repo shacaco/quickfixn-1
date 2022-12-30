@@ -62,6 +62,7 @@ namespace QuickFix
     {
         private static readonly string MSG_TYPE_STRING = CHAR_1 + "35=([^" + CHAR_1 + "]*)" + CHAR_1;
         public const char CHAR_1 = (char)1;
+        public const string SOH = "\u0001";
 
         private int field_ = 0;
         private bool validStructure_;
