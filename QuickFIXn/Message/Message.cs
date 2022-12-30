@@ -60,9 +60,9 @@ namespace QuickFix
     /// </summary>
     public class Message : FieldMap
     {
-        private const string MSG_TYPE_STRING = Message.SOH + "35=([^" + Message.SOH + "]*)" + Message.SOH;
-        private const char CHAR_1 = (char)1;
-        public const string SOH = "\u0001";
+        private static readonly string MSG_TYPE_STRING = CHAR_1 + "35=([^" + CHAR_1 + "]*)" + CHAR_1;
+        public const char CHAR_1 = (char)1;
+
         private int field_ = 0;
         private bool validStructure_;
 
@@ -149,7 +149,7 @@ namespace QuickFix
                 int tagend = msgstr.IndexOf('=', pos);
                 int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
                 pos = tagend + 1;
-                int fieldvalend = msgstr.IndexOf(SOH, pos);
+                int fieldvalend = msgstr.IndexOf(CHAR_1, pos);
                 field = field ?? StringField.Factory.GetNext();
                 field.Tag = tag;
                 field.Obj = msgstr.Substring(pos, fieldvalend - pos);

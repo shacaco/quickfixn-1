@@ -643,7 +643,7 @@ namespace QuickFix
                 var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    sb.Append(_fields[preField].toStringField()).Append(Message.SOH);
+                    sb.Append(_fields[preField].toStringField()).Append(Message.CHAR_1);
                     if (_groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
@@ -661,7 +661,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    sb.Append(field.Value.toStringField()).Append(Message.SOH);
+                    sb.Append(field.Value.toStringField()).Append(Message.CHAR_1);
                 }
             }
             else
@@ -672,7 +672,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    sb.Append(field.Value.toStringField()).Append(Message.SOH);
+                    sb.Append(field.Value.toStringField()).Append(Message.CHAR_1);
                 }
             }
 
@@ -685,7 +685,7 @@ namespace QuickFix
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
 
-                sb.Append(_fields[counterTag].toStringField()).Append(Message.SOH);
+                sb.Append(_fields[counterTag].toStringField()).Append(Message.CHAR_1);
 
                 foreach (Group group in groupList)
                     sb.Append(group.CalculateString(true));
