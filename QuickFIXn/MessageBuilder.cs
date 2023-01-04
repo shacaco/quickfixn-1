@@ -44,6 +44,11 @@ namespace QuickFix
             return _message;
         }
 
+        internal void ReturnIfReusable(Message msg)
+        {
+            _msgFactory.ReturnIfReusable(msg);
+        }
+
         internal void SetData(string msgStr)
         {
             _msgStr = msgStr;

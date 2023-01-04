@@ -796,7 +796,7 @@ namespace QuickFix
             this.Trailer.Clear();
         }
 
-        public void ClearAndInitialize()
+        public Message ClearAndInitialize()
         {
             field_ = 0;
             var bs = Header.GetString(Tags.BeginString);
@@ -807,6 +807,7 @@ namespace QuickFix
             base.Clear();
             this.Trailer.Clear();
             validStructure_ = true;
+            return this;
         }
 
         private Object lock_ToString = new Object();

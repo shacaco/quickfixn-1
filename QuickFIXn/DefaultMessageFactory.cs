@@ -104,6 +104,11 @@ namespace QuickFix
             }
         }
 
+        public void ReturnIfReusable(Message m)
+        {
+            
+        }
+
         #endregion
 
         #region Dynamic assembly load related methods

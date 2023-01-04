@@ -598,7 +598,7 @@ namespace QuickFix
                 message = msgBuilder.Build(ValidateLengthAndChecksum);
 
                 if (appDoesEarlyIntercept_)
-                    ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
+                    ((IApplicationExt) Application).FromEarlyIntercept(message, this.SessionID);
 
                 Header header = message.Header;
                 string msgType = msgBuilder.MsgType.Obj;
@@ -622,7 +622,8 @@ namespace QuickFix
 
                 if (this.SessionID.IsFIXT && !Message.IsAdminMsgType(msgType))
                 {
-                    DataDictionary.DataDictionary.Validate(message, SessionDataDictionary, ApplicationDataDictionary, beginString, msgType);
+                    DataDictionary.DataDictionary.Validate(message, SessionDataDictionary, ApplicationDataDictionary,
+                        beginString, msgType);
                 }
                 else
                 {
@@ -662,7 +663,8 @@ namespace QuickFix
                         Disconnect("Logon message is not valid");
                 }
                 catch (MessageParseError)
-                { }
+                {
+                }
 
                 throw e;
             }
@@ -695,7 +697,8 @@ namespace QuickFix
                 this.Log.OnEvent("Rejecting invalid message, field not found: " + e.Message);
                 if ((SessionID.BeginString.CompareTo(FixValues.BeginString.FIX42) >= 0) && (message.IsApp()))
                 {
-                    GenerateBusinessMessageReject(message, Fields.BusinessRejectReason.CONDITIONALLY_REQUIRED_FIELD_MISSING, e.Field);
+                    GenerateBusinessMessageReject(message,
+                        Fields.BusinessRejectReason.CONDITIONALLY_REQUIRED_FIELD_MISSING, e.Field);
                 }
                 else
                 {
@@ -705,13 +708,20 @@ namespace QuickFix
                         Disconnect("Required field missing from logon");
                     }
                     else
-                        GenerateReject(msgBuilder, new QuickFix.FixValues.SessionRejectReason(SessionRejectReason.REQUIRED_TAG_MISSING, "Required Tag Missing"), e.Field);
+                        GenerateReject(msgBuilder,
+                            new QuickFix.FixValues.SessionRejectReason(SessionRejectReason.REQUIRED_TAG_MISSING,
+                                "Required Tag Missing"), e.Field);
                 }
             }
             catch (RejectLogon e)
             {
                 GenerateLogout(e.Message);
                 Disconnect(e.ToString());
+            }
+
+            finally
+            {
+                _messageBuilder.ReturnIfReusable(message);
             }
 
             Next();
