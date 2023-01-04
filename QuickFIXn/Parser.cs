@@ -5,6 +5,7 @@ using System.Buffers;
 namespace QuickFix
 {
     /// <summary>
+    /// Parses bytestream into messages
     /// </summary>
     public class Parser
     {
