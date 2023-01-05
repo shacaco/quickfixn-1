@@ -148,7 +148,7 @@ namespace QuickFix
             try
             {
                 int tagend = msgstr.IndexOf('=', pos);
-                int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
+                int tag = int.Parse(msgstr.AsSpan(pos, tagend - pos));
                 pos = tagend + 1;
                 int fieldvalend = msgstr.IndexOf(CHAR_1, pos);
                 field = field ?? StringField.Factory.GetNext();
@@ -422,7 +422,6 @@ namespace QuickFix
             this.ApplicationDataDictionary = appDD;
             Clear();
 
-            string msgType = "";
             bool expectingHeader = true;
             bool expectingBody = true;
             int count = 0;
@@ -447,10 +446,9 @@ namespace QuickFix
 
                     if (Tags.MsgType.Equals(f.Tag))
                     {
-                        msgType = f.Obj;
                         if (appDD != null)
                         {
-                            msgMap = appDD.GetMapForMessage(msgType);
+                            msgMap = appDD.GetMapForMessage(f.Obj);
                         }
 		            }
 
