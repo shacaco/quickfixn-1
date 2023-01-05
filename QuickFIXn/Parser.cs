@@ -131,12 +131,6 @@ namespace QuickFix
             return true;
         }
 
-        private bool Fail(string what)
-        {
-            System.Console.WriteLine("Parser failed: " + what);
-            return false;
-        }
-
         private byte[] RemoveAndSwitch(byte[] array, int count)
         {
             byte[] returnByte = _producerConsumerBuffer.Dequeue();
