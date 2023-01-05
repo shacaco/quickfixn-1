@@ -17,7 +17,7 @@ namespace QuickFix.Fields
         {
             _tag = tag;
             _obj = obj;
-            _changed = true;
+            _valChanged = _fieldChanged = true;
         }
 
         #region Properties
@@ -27,7 +27,7 @@ namespace QuickFix.Fields
             set
             {
                 _obj = value;
-                _changed = true;
+                _valChanged = _fieldChanged = true;
             }
         }
 
@@ -40,7 +40,7 @@ namespace QuickFix.Fields
             set
             {
                 _tag = value;
-                _changed = true;
+                _valChanged = _fieldChanged = true;
             }
         }
         #endregion
@@ -50,8 +50,8 @@ namespace QuickFix.Fields
         /// </summary>
         public override string toStringField()
         {
-            if (_changed.Equals(true))
-                makeStringFields();
+            if (_fieldChanged)
+                makeStringField();
             return _stringField;
         }
 
@@ -60,8 +60,8 @@ namespace QuickFix.Fields
         /// </summary>
         public override string ToString()
         {
-            if (_changed)
-                makeStringFields();
+            if (_valChanged)
+                makeStringVal();
             return _stringVal;
         }
 
@@ -89,8 +89,8 @@ namespace QuickFix.Fields
         /// </summary>
         public override int getLength()
         {
-            if (_changed)
-                makeStringFields();
+            if (_fieldChanged)
+                makeStringField();
             return CharEncoding.DefaultEncoding.GetByteCount(_stringField) + 1; // +1 for SOH
         }
 
@@ -99,8 +99,8 @@ namespace QuickFix.Fields
         /// </summary>
         public override int getTotal()
         {
-            if (_changed)
-                makeStringFields();
+            if (_fieldChanged)
+                makeStringField();
 
             int sum = 0;
             byte[] array = CharEncoding.DefaultEncoding.GetBytes(_stringField);
@@ -117,16 +117,23 @@ namespace QuickFix.Fields
         /// <summary>
         /// returns tag=val
         /// </summary>
-        private void makeStringFields()
+        private void makeStringField()
+        {
+            makeStringVal();
+            _stringField = Tag + "=" + _stringVal;
+            _fieldChanged = false;
+        }
+
+        private void makeStringVal()
         {
             _stringVal = makeString();
-            _stringField = Tag + "=" + _stringVal;
-            _changed = false;
+            _valChanged = false;
         }
 
         #region Private members
         private string _stringField;
-        private bool _changed;
+        private bool _valChanged;
+        private bool _fieldChanged;
         private T _obj;
         private int _tag;
         private string _stringVal;
