@@ -138,7 +138,7 @@ namespace QuickFix
             {
                 session.ResetTargetSeqOnCreation = settings.GetBool(SessionSettings.RESET_TSRGET_SEQ_ON_CREATION);
                 if (session.ResetTargetSeqOnCreation)
-                    session.MessageStore.SetNextTargetMsgSeqNum(1);
+                    session.MessageStore.NextTargetMsgSeqNum = 1;
             }
             if (settings.Has(SessionSettings.RESET_ON_LOGOUT))
                 session.ResetOnLogout = settings.GetBool(SessionSettings.RESET_ON_LOGOUT);

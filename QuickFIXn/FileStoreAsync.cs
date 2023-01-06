@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
-using My_Collections;
 using QuickFix.Util;
 
 namespace QuickFix
@@ -152,8 +151,8 @@ namespace QuickFix
                     string[] parts = seqNumReader.ReadToEnd().Split(':');
                     if (parts.Length == 2)
                     {
-                        cache_.SetNextSenderMsgSeqNum(Convert.ToInt32(parts[0]));
-                        cache_.SetNextTargetMsgSeqNum(Convert.ToInt32(parts[1]));
+                        cache_.NextSenderMsgSeqNum = Convert.ToInt32(parts[0]);
+                        cache_.NextTargetMsgSeqNum = Convert.ToInt32(parts[1]);
                     }
                 }
             }
@@ -215,26 +214,24 @@ namespace QuickFix
             return true;
         }
 
-        public int GetNextSenderMsgSeqNum()
+        public int NextSenderMsgSeqNum
         {
-            return cache_.GetNextSenderMsgSeqNum();
+            get { return cache_.NextSenderMsgSeqNum; }
+            set
+            {
+                cache_.NextSenderMsgSeqNum = value;
+                setSeqNum();
+            }
         }
 
-        public int GetNextTargetMsgSeqNum()
+        public int NextTargetMsgSeqNum
         {
-            return cache_.GetNextTargetMsgSeqNum();
-        }
-
-        public void SetNextSenderMsgSeqNum(int value)
-        {
-            cache_.SetNextSenderMsgSeqNum(value);
-            setSeqNum();
-        }
-
-        public void SetNextTargetMsgSeqNum(int value)
-        {
-            cache_.SetNextTargetMsgSeqNum(value);
-            setSeqNum();
+            get { return cache_.NextTargetMsgSeqNum; }
+            set
+            {
+                cache_.NextTargetMsgSeqNum = value;
+                setSeqNum();
+            }
         }
 
         public void IncrNextSenderMsgSeqNum()
@@ -288,9 +285,9 @@ namespace QuickFix
                     }
 
                     SeqMsgBuffer.Remove(0, 10);
-                    SeqMsgBuffer.Insert(0, GetNextSenderMsgSeqNum().ToString("D10"));
+                    SeqMsgBuffer.Insert(0, NextSenderMsgSeqNum.ToString("D10"));
                     SeqMsgBuffer.Remove(13, 10);
-                    SeqMsgBuffer.Insert(13, GetNextTargetMsgSeqNum().ToString("D10"));
+                    SeqMsgBuffer.Insert(13, NextTargetMsgSeqNum.ToString("D10"));
 
                     seqNumsWriter_.BaseStream.Seek(0, System.IO.SeekOrigin.Begin);
                     seqNumsWriter_.Write(SeqMsgBuffer.ToString());
