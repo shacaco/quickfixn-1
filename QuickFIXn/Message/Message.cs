@@ -19,13 +19,13 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString(bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), HEADER_FIELD_ORDER, orderPostFieldOrder);
+            var result = CalculateString(sb ?? _toStringBuilder.Clear(), HEADER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
             return base.CalculateString(sb, HEADER_FIELD_ORDER, orderPostFieldOrder);
         }
@@ -43,13 +43,13 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString(bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = base.CalculateString(_toStringBuilder.Clear(), TRAILER_FIELD_ORDER, orderPostFieldOrder);
+            var result = base.CalculateString(sb ?? _toStringBuilder.Clear(), TRAILER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
             return base.CalculateString(sb, TRAILER_FIELD_ORDER, orderPostFieldOrder);
         }
@@ -201,10 +201,10 @@ namespace QuickFix
             return ExtractField(msgstr, ref pos, null, null);
         }
 
-        public static string ExtractBeginString(string msgstr, StringField reusableField = null)
+        public static StringField ExtractBeginString(string msgstr, StringField reusableField = null)
         {
             int i = 0;
-            return ExtractField(msgstr, ref i, null, null, reusableField).Obj;
+            return ExtractField(msgstr, ref i, null, null, reusableField);
         }
 
         public static bool IsHeaderField(int tag)
@@ -538,7 +538,7 @@ namespace QuickFix
 
                     // Create a new group!
                     if (msgFactory != null)
-                        grp = msgFactory.Create(Message.ExtractBeginString(msgstr), Message.GetMsgType(msgstr), grpNoFld.Tag);
+                        grp = msgFactory.Create(Message.ExtractBeginString(msgstr).Obj, Message.GetMsgType(msgstr), grpNoFld.Tag);
 
                     //If above failed (shouldn't ever happen), just use a generic Group.
                     if (grp == null)
@@ -796,12 +796,21 @@ namespace QuickFix
 
         public Message ClearAndInitialize()
         {
+            var bs = StringField.Factory.GetNext();
+            bs.Tag = Tags.BeginString;
+            bs.Obj = Header.GetString(Tags.BeginString);
+            var mt = StringField.Factory.GetNext();
+            mt.Tag = Tags.MsgType;
+            mt.Obj = Header.GetString(Tags.MsgType);
+            return ClearAndInitialize(bs, mt);
+        }
+
+        internal Message ClearAndInitialize(IField beginString, IField msgType)
+        {
             field_ = 0;
-            var bs = Header.GetString(Tags.BeginString);
-            var mt = Header.GetString(Tags.MsgType);
             this.Header.Clear();
-            this.Header.SetField(new BeginString(bs));
-            this.Header.SetField(new QuickFix.Fields.MsgType(mt));
+            this.Header.SetField(beginString);
+            this.Header.SetField(msgType);
             base.Clear();
             this.Trailer.Clear();
             validStructure_ = true;
@@ -820,8 +829,11 @@ namespace QuickFix
             {
                 this.Header.SetField(new BodyLength(BodyLength()), true);
                 this.Trailer.SetField(new CheckSum(Fields.Converters.CheckSumConverter.Convert(CheckSum())), true);
-
-                return this.Header.CalculateString(orderBodyPostFieldOrder) + CalculateString(orderBodyPostFieldOrder) + this.Trailer.CalculateString(orderBodyPostFieldOrder);
+                _toStringBuilder.Clear();
+                this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                this.Trailer.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                return _toStringBuilder.ToString();
             }
         }
 

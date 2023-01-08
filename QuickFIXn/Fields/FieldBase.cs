@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace QuickFix.Fields
 {
@@ -8,6 +9,8 @@ namespace QuickFix.Fields
     /// <typeparam name="T">Internal storage type</typeparam>
     public abstract class FieldBase<T> : IField
     {
+        private readonly StringBuilder _sb = new StringBuilder(64);
+
         /// <summary>
         /// Constructs a new field with the specified tag and value
         /// </summary>
@@ -28,6 +31,7 @@ namespace QuickFix.Fields
             {
                 _obj = value;
                 _valChanged = _fieldChanged = true;
+                _sb.Clear();
             }
         }
 
@@ -41,6 +45,7 @@ namespace QuickFix.Fields
             {
                 _tag = value;
                 _valChanged = _fieldChanged = true;
+                _sb.Clear();
             }
         }
         #endregion
@@ -52,7 +57,7 @@ namespace QuickFix.Fields
         {
             if (_fieldChanged)
                 makeStringField();
-            return _stringField;
+            return _stringField ??= _sb.ToString();
         }
 
         /// <summary>
@@ -91,25 +96,38 @@ namespace QuickFix.Fields
         {
             if (_fieldChanged)
                 makeStringField();
-            return CharEncoding.DefaultEncoding.GetByteCount(_stringField) + 1; // +1 for SOH
+            return _bytesLength;
         }
 
         /// <summary>
         /// checksum
         /// </summary>
-        public override int getTotal()
+        public override unsafe int  getTotal()
         {
             if (_fieldChanged)
                 makeStringField();
+            return _bytesTotal;
+        }
 
-            int sum = 0;
-            byte[] array = CharEncoding.DefaultEncoding.GetBytes(_stringField);
-            for (int i = 0; i < array.Length; i++)
+        private unsafe void SetByteParams()
+        {
+            char* buffer = stackalloc char[_sb.Length];
+            for (int i = 0; i < _sb.Length; i++)
             {
-                sum += array[i];
+                buffer[i] = _sb[i];
             }
 
-            return (sum + 1); // +1 for SOH
+            var bytePtrLength = (int) (_sb.Length * 1.5) + 3;
+            byte* bytePtr = stackalloc byte[bytePtrLength];
+            _bytesLength = CharEncoding.DefaultEncoding.GetBytes(buffer, _sb.Length, bytePtr, bytePtrLength) + 1;
+         
+            int sum = 0;
+            for (int i = 0; i < _bytesLength - 1; i++)
+            {
+                sum += bytePtr[i];
+            }
+
+            _bytesTotal = sum + 1; // +1 for SOH
         }
 
         protected abstract string makeString();
@@ -119,8 +137,13 @@ namespace QuickFix.Fields
         /// </summary>
         private void makeStringField()
         {
+            _stringField = null;
             makeStringVal();
-            _stringField = Tag + "=" + _stringVal;
+            const char equals = '=';
+            _sb.Append(Tag);
+            _sb.Append(equals);
+            _sb.Append(_stringVal);
+            SetByteParams();
             _fieldChanged = false;
         }
 
@@ -130,13 +153,25 @@ namespace QuickFix.Fields
             _valChanged = false;
         }
 
+        public override StringBuilder appendStringFieldTo(StringBuilder builder)
+        {
+            if (_fieldChanged)
+                makeStringField();
+            builder.Append(_sb);
+            return builder;
+        }
+
         #region Private members
+       
         private string _stringField;
         private bool _valChanged;
         private bool _fieldChanged;
+        private int _bytesTotal;
+        private int _bytesLength;
         private T _obj;
         private int _tag;
         private string _stringVal;
+    
         #endregion
     }
 }

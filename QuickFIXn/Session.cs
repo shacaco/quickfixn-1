@@ -603,7 +603,7 @@ namespace QuickFix
 
                 Header header = message.Header;
                 string msgType = msgBuilder.MsgType.Obj;
-                string beginString = msgBuilder.BeginString;
+                string beginString = msgBuilder.BeginString.Obj;
 
                 if (!beginString.Equals(this.SessionID.BeginString))
                     throw new UnsupportedVersion(beginString);
@@ -718,11 +718,6 @@ namespace QuickFix
             {
                 GenerateLogout(e.Message);
                 Disconnect(e.ToString());
-            }
-
-            finally
-            {
-                _messageBuilder.ReturnIfReusable(message);
             }
 
             Next();

@@ -358,7 +358,7 @@ namespace UnitTests
                 + "33=2" + nul + "58=L1" + nul + "58=L2" + nul + "10=016" + nul;
 
             StringField msgType = Message.IdentifyType(msgStr);
-            string beginString = Message.ExtractBeginString(msgStr);
+            string beginString = Message.ExtractBeginString(msgStr).Obj;
 
             Message message = f.Create(beginString, msgType.Obj);
             message.FromString(msgStr, true, dd, dd, f);
@@ -383,7 +383,7 @@ namespace UnitTests
             // note: length and checksum might be garbage
             string msgStr = pipedStr.Replace("|", Message.SOH);
 
-            string beginString = Message.ExtractBeginString(msgStr);
+            string beginString = Message.ExtractBeginString(msgStr).Obj;
             Message msg = new Message(msgStr, dd, false);
 
             // true param means body-only, i.e. don't validate length/checksum

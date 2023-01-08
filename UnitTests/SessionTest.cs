@@ -24,7 +24,7 @@ namespace UnitTests
         public bool Send(string msgStr)
         {
             StringField msgType = QuickFix.Message.IdentifyType(msgStr);
-            string beginString = QuickFix.Message.ExtractBeginString(msgStr);
+            string beginString = QuickFix.Message.ExtractBeginString(msgStr).Obj;
 
             QuickFix.Message message = messageFactory.Create(beginString, msgType.Obj);
             QuickFix.DataDictionary.DataDictionary dd = new QuickFix.DataDictionary.DataDictionary();

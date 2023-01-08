@@ -403,8 +403,8 @@ namespace UnitTests
             string m1 = "8=FIX4.2\x01" + "9999=99999\x01";
             string m2 = "987=pants\x01xxxxxxxxxxxxxxxxxxxxxx";
 
-            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1));
-            Assert.AreEqual("pants", Message.ExtractBeginString(m2));
+            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1).Obj);
+            Assert.AreEqual("pants", Message.ExtractBeginString(m2).Obj);
         }
 
         [Test]
