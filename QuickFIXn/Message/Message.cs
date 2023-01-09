@@ -5,7 +5,6 @@ using System.Text;
 using QuickFix.Fields;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-using System.Collections.Generic;
 
 namespace QuickFix
 {
