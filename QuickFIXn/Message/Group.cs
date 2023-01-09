@@ -71,13 +71,13 @@ namespace QuickFix
 
         public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(sb ?? _toStringBuilder.Clear(), _fieldOrder ?? new int[] { _delim }, orderPostFieldOrder);// 802 shouldn't be in _fieldOrder
+            var result = CalculateString(sb ?? new StringBuilder(64), _fieldOrder ?? new int[] { _delim }, orderPostFieldOrder);// 802 shouldn't be in _fieldOrder
             return result;
         }
 
         public override string ToString()
         {
-            return CalculateString(true, _toStringBuilder.Clear()).ToString();
+            return CalculateString(true, new StringBuilder(64)).ToString();
         }
 
         #region Private Members

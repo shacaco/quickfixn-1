@@ -12,7 +12,6 @@ namespace QuickFix
     /// </summary>
     public class FieldMap : IEnumerable<KeyValuePair<int, Fields.IField>>
     {
-        protected readonly StringBuilder _toStringBuilder = new StringBuilder(256);
         /// <summary>
         /// Default constructor
         /// </summary>
@@ -568,9 +567,9 @@ namespace QuickFix
                     total += field.getTotal();
             }
 
-            foreach (List<Group> groupList in _groups.Values)
+            foreach (var groupList in _groups)
             {
-                foreach (Group group in groupList)
+                foreach (Group group in groupList.Value)
                     total += group.CalculateTotal();
             }
             return total;
@@ -600,10 +599,9 @@ namespace QuickFix
                     total += field.getLength();
                 }
             }
-
-            foreach (List<Group> groupList in _groups.Values)
+            foreach (var groupList in _groups)
             {
-                foreach (Group group in groupList)
+                foreach (Group group in groupList.Value)
                     total += group.CalculateLength();
             }
 
@@ -612,7 +610,7 @@ namespace QuickFix
 
         public virtual StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(sb ?? _toStringBuilder.Clear(), FieldOrder ?? Array.Empty<int>(), orderPostFieldOrder);
+            var result = CalculateString(sb ?? new StringBuilder(64), FieldOrder ?? Array.Empty<int>(), orderPostFieldOrder);
             return result;
         }
 
@@ -620,9 +618,9 @@ namespace QuickFix
         public virtual StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFields)
         {
             _groupCounterTags.Clear();
-            if (_groups.Keys.Count > 0)
-                foreach (var key in _groups.Keys)
-                    _groupCounterTags.Add(key);
+            if (_groups.Count > 0)
+                foreach (var kvp in _groups)
+                    _groupCounterTags.Add(kvp.Key);
 
             for (int i = 0; i < preFields.Length; i++)
             {
@@ -662,16 +660,16 @@ namespace QuickFix
                 }
             }
 
-            foreach (int counterTag in _groups.Keys)
+            foreach (var counterTag in _groups)
             {
-                if (preFields.Contains(counterTag))
+                if (preFields.Contains(counterTag.Key))
                     continue; //already did this one
 
-                List<Group> groupList = _groups[counterTag];
+                List<Group> groupList = _groups[counterTag.Key];
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
            
-                _fields[counterTag].appendStringFieldTo(sb).Append(Message.CHAR_1);
+                _fields[counterTag.Key].appendStringFieldTo(sb).Append(Message.CHAR_1);
 
                 foreach (Group group in groupList)
                     group.CalculateString(true, sb);

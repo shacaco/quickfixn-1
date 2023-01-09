@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,7 +21,7 @@ namespace QuickFix
 
         public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(sb ?? _toStringBuilder.Clear(), HEADER_FIELD_ORDER, orderPostFieldOrder);
+            var result = CalculateString(sb ?? new StringBuilder(64), HEADER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
@@ -45,7 +45,7 @@ namespace QuickFix
 
         public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = base.CalculateString(sb ?? _toStringBuilder.Clear(), TRAILER_FIELD_ORDER, orderPostFieldOrder);
+            var result = base.CalculateString(sb ?? new StringBuilder(64), TRAILER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
@@ -64,6 +64,7 @@ namespace QuickFix
         public const char CHAR_1 = (char)1;
         public const string SOH = "\u0001";
 
+        protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
         private int field_ = 0;
         private bool validStructure_;
 
@@ -143,7 +144,7 @@ namespace QuickFix
             return f;
         }
 
-        public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
+        public static MemoryField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, MemoryField field = null)
         {
             try
             {
@@ -151,33 +152,9 @@ namespace QuickFix
                 int tag = int.Parse(msgstr.AsSpan(pos, tagend - pos));
                 pos = tagend + 1;
                 int fieldvalend = msgstr.IndexOf(CHAR_1, pos);
-                field = field ?? StringField.Factory.GetNext();
+                field = field ?? MemoryField.Factory.GetNext();
                 field.Tag = tag;
-                field.Obj = msgstr.Substring(pos, fieldvalend - pos);
-
-                /*
-                 TODO data dict stuff
-                if (((null != sessionDD) && sessionDD.IsDataField(field.Tag)) || ((null != appDD) && appDD.IsDataField(field.Tag)))
-                {
-                    string fieldLength = "";
-                    // Assume length field is 1 less
-                    int lenField = field.Tag - 1;
-                    // Special case for Signature which violates above assumption
-                    if (Tags.Signature.Equals(field.Tag))
-                        lenField = Tags.SignatureLength;
-
-                    if ((null != group) && group.isSetField(lenField))
-                    {
-                        fieldLength = group.GetField(lenField);
-                        soh = equalSign + 1 + atol(fieldLength.c_str());
-                    }
-                    else if (isSetField(lenField))
-                    {
-                        fieldLength = getField(lenField);
-                        soh = equalSign + 1 + atol(fieldLength.c_str());
-                    }
-                }
-                */
+                field.setValue(msgstr.AsMemory(pos, fieldvalend - pos));
 
                 pos = fieldvalend + 1;
                 return field;
@@ -196,9 +173,38 @@ namespace QuickFix
             }
         }
 
-        public static StringField ExtractField(string msgstr, ref int pos)
+        public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
         {
-            return ExtractField(msgstr, ref pos, null, null);
+            try
+            {
+                int tagend = msgstr.IndexOf('=', pos);
+                int tag = int.Parse(msgstr.AsSpan(pos, tagend - pos));
+                pos = tagend + 1;
+                int fieldvalend = msgstr.IndexOf(CHAR_1, pos);
+                field = field ?? StringField.Factory.GetNext();
+                field.Tag = tag;
+                field.setValue(msgstr.Substring(pos, fieldvalend - pos));
+
+                pos = fieldvalend + 1;
+                return field;
+            }
+            catch (System.ArgumentOutOfRangeException e)
+            {
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+            }
+            catch (System.OverflowException e)
+            {
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+            }
+            catch (System.FormatException e)
+            {
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+            }
+        }
+
+        public static MemoryField ExtractField(string msgstr, ref int pos)
+        {
+            return ExtractField(msgstr, ref pos, null, null, default(MemoryField));
         }
 
         public static StringField ExtractBeginString(string msgstr, StringField reusableField = null)
@@ -361,7 +367,7 @@ namespace QuickFix
             int count = 0;
             while(pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos);
+                MemoryField f = ExtractField(msgstr, ref pos);
                 
                 if((count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     return false;
@@ -397,7 +403,7 @@ namespace QuickFix
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
         /// <param name="reusableFields"></param>
         public void FromString(string msgstr, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, StringField[] reusableFields = null)
+            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, MemoryField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
             FromString(msgstr, validate, sessionDD, appDD, msgFactory, false, reusableFields);
@@ -417,7 +423,7 @@ namespace QuickFix
         /// <param name="reusableFields"></param>
         public void FromString(string msgstr, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
-            bool ignoreBody, StringField[] reusableFields = null)
+            bool ignoreBody, MemoryField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
             Clear();
@@ -430,7 +436,7 @@ namespace QuickFix
             int reusableFieldsIndex = 0;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
+                MemoryField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
                 
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
@@ -448,7 +454,7 @@ namespace QuickFix
                     {
                         if (appDD != null)
                         {
-                            msgMap = appDD.GetMapForMessage(f.Obj);
+                            msgMap = appDD.GetMapForMessage(f.ToString());
                         }
 		            }
 
@@ -514,7 +520,7 @@ namespace QuickFix
         /// <param name="msgFactory">if null, then this method will use the generic Group class constructor</param>
         /// <returns></returns>
         protected int SetGroup(
-            StringField grpNoFld, string msgstr, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
+            MemoryField grpNoFld, string msgstr, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
             DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             int grpEntryDelimiterTag = groupDD.Delim;
@@ -524,7 +530,7 @@ namespace QuickFix
             while (pos < msgstr.Length)
             {
                 grpPos = pos;
-                StringField f = ExtractField(msgstr, ref pos, sessionDataDictionary, appDD);
+                MemoryField f = ExtractField(msgstr, ref pos, sessionDataDictionary, appDD, default(MemoryField));
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -827,8 +833,14 @@ namespace QuickFix
         {
             lock (lock_ToString)
             {
-                this.Header.SetField(new BodyLength(BodyLength()), true);
-                this.Trailer.SetField(new CheckSum(Fields.Converters.CheckSumConverter.Convert(CheckSum())), true);
+                var bl = IntField.Factory.GetNext();
+                bl.Tag = Tags.BodyLength;
+                bl.Obj = BodyLength();
+                this.Header.SetField(bl, true);
+                var cs = StringField.Factory.GetNext();
+                cs.Tag = Tags.CheckSum;
+                cs.Obj = Fields.Converters.CheckSumConverter.Convert(CheckSum());
+                this.Trailer.SetField(cs, true);
                 _toStringBuilder.Clear();
                 this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 CalculateString(orderBodyPostFieldOrder, _toStringBuilder);

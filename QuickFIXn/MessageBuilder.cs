@@ -1,4 +1,4 @@
-﻿using QuickFix.Fields;
+using QuickFix.Fields;
 using System.Linq;
 
 namespace QuickFix
@@ -9,7 +9,7 @@ namespace QuickFix
         private readonly DataDictionary.DataDictionary _appDD;
         private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
         private readonly IMessageFactory _msgFactory;
-        private readonly StringField[] reusableFields = new StringField[100].Select(i => new StringField(-1)).ToArray();
+        private readonly MemoryField[] reusableFields = new MemoryField[100].Select(i => new MemoryField(-1)).ToArray();
         private readonly Message _reusableMessage = new Message();
         private Message _message;
 

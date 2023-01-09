@@ -36,14 +36,14 @@ namespace UnitTests
         {
             string str1 = "8=FIX.4.2\x01" + "9=46\x01" + "35=0\x01" + "34=3\x01" + "49=TW\x01";
             int pos = 0;
-            StringField sf1 = Message.ExtractField(str1, ref pos);
+            MemoryField sf1 = Message.ExtractField(str1, ref pos);
             Assert.That(pos, Is.EqualTo(10));
             Assert.That(sf1.Tag, Is.EqualTo(8));
-            Assert.That(sf1.Obj, Is.EqualTo("FIX.4.2"));
-            StringField sf2 = Message.ExtractField(str1, ref pos);
+            Assert.That(sf1.ToString(), Is.EqualTo("FIX.4.2"));
+            MemoryField sf2 = Message.ExtractField(str1, ref pos);
             Assert.That(pos, Is.EqualTo(15));
             Assert.That(sf2.Tag, Is.EqualTo(9));
-            Assert.That(sf2.Obj, Is.EqualTo("46"));
+            Assert.That(sf2.ToString(), Is.EqualTo("46"));
         }
 
         [Test]

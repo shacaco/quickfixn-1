@@ -30,8 +30,7 @@ namespace QuickFix.Fields
             set
             {
                 _obj = value;
-                _valChanged = _fieldChanged = true;
-                _sb.Clear();
+                OnDataChanged();
             }
         }
 
@@ -44,8 +43,7 @@ namespace QuickFix.Fields
             set
             {
                 _tag = value;
-                _valChanged = _fieldChanged = true;
-                _sb.Clear();
+                OnDataChanged();
             }
         }
         #endregion
@@ -159,10 +157,16 @@ namespace QuickFix.Fields
                 makeStringField();
             builder.Append(_sb);
             return builder;
+        }     
+
+        protected void OnDataChanged()
+        {
+            _valChanged = _fieldChanged = true;
+            _sb.Clear();
         }
 
         #region Private members
-       
+
         private string _stringField;
         private bool _valChanged;
         private bool _fieldChanged;
