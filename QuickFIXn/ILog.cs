@@ -19,6 +19,12 @@ namespace QuickFix
         void OnIncoming(string msg);
 
         /// <summary>
+        /// Logs an incoming message
+        /// </summary>
+        /// <param name="msg">a raw FIX message</param>
+        void OnIncoming(ReadOnlyMemory<char> msg);
+
+        /// <summary>
         /// Logs an outgoing message
         /// </summary>
         /// <param name="msg">a raw FIX message</param>

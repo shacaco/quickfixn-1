@@ -17,6 +17,7 @@ namespace QuickFix
 
         private byte[] buffer_;
         private int usedBufferLength;
+        private readonly char[] _currentMsg = new char[1024];
 
         public Parser()
         {
@@ -41,9 +42,9 @@ namespace QuickFix
             DoAddToStream(data, data.Length);
         }
 
-        public bool ReadFixMessage(out string msg)
+        public bool ReadFixMessage(out ReadOnlyMemory<char> msg)
         {
-            msg = string.Empty;
+            msg = null;
 
             if (buffer_.Length < 2)//too short
                 return false;
@@ -79,7 +80,8 @@ namespace QuickFix
                     return false;//no separator found
                 totalMsgLength += index + 1;
 
-                msg = CharEncoding.DefaultEncoding.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
+                var totalChars = CharEncoding.DefaultEncoding.GetChars(buffer_, msgStartPos, totalMsgLength, _currentMsg, 0);//cut message to size
+                msg = _currentMsg.AsMemory(0, totalChars);
                 buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }

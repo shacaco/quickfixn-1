@@ -177,7 +177,7 @@ namespace QuickFix
 
         private void ProcessStream()
         {
-            string msg;
+            ReadOnlyMemory<char> msg;
             while (parser_.ReadFixMessage(out msg))
             {
                 session_.Next(msg);

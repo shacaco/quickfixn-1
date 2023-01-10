@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace QuickFix
 {
     /// <summary>
@@ -32,6 +34,11 @@ namespace QuickFix
             {
                 System.Console.WriteLine("<incoming> " + msg);
             }
+        }
+
+        public void OnIncoming(ReadOnlyMemory<char> msg)
+        {
+            OnIncoming(msg.ToString());
         }
 
         public void OnOutgoing(string msg)

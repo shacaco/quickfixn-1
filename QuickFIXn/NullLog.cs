@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace QuickFix
 {
     /// <summary>
@@ -12,6 +14,9 @@ namespace QuickFix
         { }
 
         public void OnIncoming(string msg)
+        { }
+
+        public void OnIncoming(ReadOnlyMemory<char> msg)
         { }
 
         public void OnOutgoing(string msg)

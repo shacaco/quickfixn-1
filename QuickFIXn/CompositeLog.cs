@@ -31,6 +31,11 @@ namespace QuickFix
                 log.OnIncoming(msg);
         }
 
+        public void OnIncoming(ReadOnlyMemory<char> msg)
+        {
+            OnIncoming(msg.ToString());
+        }
+
         public void OnOutgoing(string msg)
         {
             DisposedCheck();

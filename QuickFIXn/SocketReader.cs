@@ -122,29 +122,30 @@ namespace QuickFix
             }
         }
 
-        private void OnMessageFound(string msg)
+        private void OnMessageFound(ReadOnlyMemory<char> msg)
         {
             try
             {
                 if (null == qfSession_)
                 {
-                    qfSession_ = Session.LookupSession(Message.GetReverseSessionID(msg));
+                    var msgString = msg.ToString();
+                    qfSession_ = Session.LookupSession(Message.GetReverseSessionID(msgString));
                     if (null == qfSession_)
                     {
-                        this.Log("ERROR: Disconnecting; received message for unknown session: " + msg);
+                        this.Log("ERROR: Disconnecting; received message for unknown session: " + msgString);
                         DisconnectClient();
                         return;
                     }
                     else if(IsAssumedSession(qfSession_.SessionID))
                     {
-                        this.Log("ERROR: Disconnecting; received message for unknown session: " + msg);
+                        this.Log("ERROR: Disconnecting; received message for unknown session: " + msgString);
                         qfSession_ = null;
                         DisconnectClient();
                         return;
                     }
                     else
                     {
-                        if (!HandleNewSession(msg))
+                        if (!HandleNewSession(msgString))
                             return;
                     }
                 }
@@ -168,7 +169,7 @@ namespace QuickFix
             }
         }
 
-        protected void HandleBadMessage(string msg, System.Exception e)
+        protected void HandleBadMessage(ReadOnlyMemory<char> msg, System.Exception e)
         {
             try
             {
@@ -186,7 +187,7 @@ namespace QuickFix
             { }
         }
 
-        protected bool ReadMessage(out string msg)
+        protected bool ReadMessage(out ReadOnlyMemory<char> msg)
         {
             try
             {
@@ -194,14 +195,14 @@ namespace QuickFix
             }
             catch (MessageParseError e)
             {
-                msg = "";
+                msg = null;
                 throw e;
             }
         }
 
         protected void ProcessStream()
         {
-            string msg;
+            ReadOnlyMemory<char> msg;
             while (ReadMessage(out msg))
                 OnMessageFound(msg);
         }

@@ -17,18 +17,18 @@ namespace UnitTests
         public void IdentifyTypeTest()
         {
             string msg1 = "\x01" + "35=A\x01";
-            Assert.That(Message.IdentifyType(msg1).Obj, Is.EqualTo(new MsgType("A").Obj));
+            Assert.That(Message.IdentifyType(msg1.AsMemory()).Obj, Is.EqualTo(new MsgType("A").Obj));
             string msg2 = "a;sldkfjadls;k\x01" + "35=A\x01" + "a;sldkfja;sdlfk";
-            Assert.That(Message.IdentifyType(msg2).Obj, Is.EqualTo(new MsgType("A").Obj));
+            Assert.That(Message.IdentifyType(msg2.AsMemory()).Obj, Is.EqualTo(new MsgType("A").Obj));
             string msg3 = "8=FIX4.2\x01" + "9=12\x01\x01" + "35=B\x01" + "10=031\x01";
-            Assert.That(Message.IdentifyType(msg3).Obj, Is.EqualTo(new MsgType("B").Obj));
+            Assert.That(Message.IdentifyType(msg3.AsMemory()).Obj, Is.EqualTo(new MsgType("B").Obj));
 
             // no 35
             string err1 = String.Join(Message.SOH, new string[] { "8=FIX.4.4", "49=Sender", "" });
-            Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err1); });
+            Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err1.AsMemory()); });
             // no SOH at end of 35
             string err2 = String.Join(Message.SOH, new string[] { "8=FIX.4.4", "35=A" });
-            Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err2); });
+            Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err2.AsMemory()); });
         }
 
         [Test]
@@ -36,11 +36,11 @@ namespace UnitTests
         {
             string str1 = "8=FIX.4.2\x01" + "9=46\x01" + "35=0\x01" + "34=3\x01" + "49=TW\x01";
             int pos = 0;
-            MemoryField sf1 = Message.ExtractField(str1, ref pos);
+            MemoryField sf1 = Message.ExtractField(str1.AsMemory(), ref pos);
             Assert.That(pos, Is.EqualTo(10));
             Assert.That(sf1.Tag, Is.EqualTo(8));
             Assert.That(sf1.ToString(), Is.EqualTo("FIX.4.2"));
-            MemoryField sf2 = Message.ExtractField(str1, ref pos);
+            MemoryField sf2 = Message.ExtractField(str1.AsMemory(), ref pos);
             Assert.That(pos, Is.EqualTo(15));
             Assert.That(sf2.Tag, Is.EqualTo(9));
             Assert.That(sf2.ToString(), Is.EqualTo("46"));
@@ -51,13 +51,13 @@ namespace UnitTests
         {
             int pos = 0;
             Assert.Throws(typeof(MessageParseError),
-                delegate { Message.ExtractField("=", ref pos); });
+                delegate { Message.ExtractField("=".AsMemory(), ref pos); });
             Assert.Throws(typeof(MessageParseError),
-                delegate { Message.ExtractField("35=A", ref pos); });
+                delegate { Message.ExtractField("35=A".AsMemory(), ref pos); });
             Assert.Throws(typeof(MessageParseError),
-                delegate { Message.ExtractField("\x01" + "35=A", ref pos); });
+                delegate { Message.ExtractField(("\x01" + "35=A").AsMemory(), ref pos); });
             Assert.Throws(typeof(MessageParseError),
-                delegate { Message.ExtractField("35=\x01", ref pos); });
+                delegate { Message.ExtractField("35=\x01".AsMemory(), ref pos); });
         }
 
 
@@ -76,7 +76,7 @@ namespace UnitTests
             Message msg = new Message();
             try
             {
-                msg.FromString(str1, true, null, null, _defaultMsgFactory);
+                msg.FromString(str1.AsMemory(), true, null, null, _defaultMsgFactory);
             }
             catch (InvalidMessage e)
             {
@@ -93,7 +93,7 @@ namespace UnitTests
             Message msg = new Message();
             try
             {
-                msg.FromString(str1, true, null, null, _defaultMsgFactory);
+                msg.FromString(str1.AsMemory(), true, null, null, _defaultMsgFactory);
             }
             catch (InvalidMessage e)
             {
@@ -156,7 +156,7 @@ namespace UnitTests
             string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
-            msg.FromString(msgStr, true, dd, dd, null); // <-- null factory!
+            msg.FromString(msgStr.AsMemory(), true, dd, dd, null); // <-- null factory!
 
             //Console.WriteLine(msg.ToString());
 
@@ -181,7 +181,7 @@ namespace UnitTests
                 + "60=20111011-15:06:23.103" + nul
                 + "10=35" + nul;
 
-            n.FromString(s, true, dd, dd, _defaultMsgFactory);
+            n.FromString(s.AsMemory(), true, dd, dd, _defaultMsgFactory);
             Assert.AreEqual("386=3", n.NoTradingSessions.toStringField());
             StringAssert.Contains("386=3", n.ToString()); //should not be "corrected" to 2!
         }
@@ -203,7 +203,7 @@ namespace UnitTests
               "354=4", "355=tres", // third group, also missing delimiter
               "10=193" }) + Message.SOH;
 
-            Assert.Throws<RepeatedTagWithoutGroupDelimiterTagException>(delegate { n.FromString(s, true, dd, dd, _defaultMsgFactory); });
+            Assert.Throws<RepeatedTagWithoutGroupDelimiterTagException>(delegate { n.FromString(s.AsMemory(), true, dd, dd, _defaultMsgFactory); });
         }
 
         [Test]
@@ -214,7 +214,7 @@ namespace UnitTests
             Message msg = new Message();
             try
             {
-                msg.FromString(str1, true, null, null, _defaultMsgFactory);
+                msg.FromString(str1.AsMemory(), true, null, null, _defaultMsgFactory);
             }
             catch (InvalidMessage e)
             {
@@ -344,7 +344,7 @@ namespace UnitTests
             var msg = new QuickFix.FIX44.ExecutionReport();
             var dd = new QuickFix.DataDictionary.DataDictionary();
             dd.LoadFIXSpec("FIX44");
-            msg.FromString(data, false, dd, dd, _defaultMsgFactory);
+            msg.FromString(data.AsMemory(), false, dd, dd, _defaultMsgFactory);
 
             var grp = msg.GetGroup(1, Tags.NoPartyIDs);
             Assert.That(grp.GetString(Tags.PartyID), Is.EqualTo("AAA35791"));
@@ -366,7 +366,7 @@ namespace UnitTests
             var msg = new QuickFix.FIX44.ExecutionReport();
             var dd = new QuickFix.DataDictionary.DataDictionary();
             dd.LoadFIXSpec("FIX44");
-            msg.FromString(data, false, dd, dd, _defaultMsgFactory);
+            msg.FromString(data.AsMemory(), false, dd, dd, _defaultMsgFactory);
 
             var subGrp = msg.GetGroup(1, Tags.NoPartyIDs).GetGroup(1, Tags.NoPartySubIDs);
             Assert.That(subGrp.GetString(Tags.PartySubID), Is.EqualTo("OHAI123"));
@@ -384,7 +384,7 @@ namespace UnitTests
             QuickFix.DataDictionary.DataDictionary dd = new QuickFix.DataDictionary.DataDictionary();
             dd.LoadFIXSpec("FIX44");
             var nos = new QuickFix.FIX44.Logon();
-            nos.FromString(data, false, dd, dd, _defaultMsgFactory);
+            nos.FromString(data.AsMemory(), false, dd, dd, _defaultMsgFactory);
             Group hops = nos.Header.GetGroup(1, Tags.NoHops);
             Assert.That(hops.GetString(Tags.HopCompID), Is.EqualTo("FOO"));
             hops = nos.Header.GetGroup(2, Tags.NoHops);
@@ -403,8 +403,8 @@ namespace UnitTests
             string m1 = "8=FIX4.2\x01" + "9999=99999\x01";
             string m2 = "987=pants\x01xxxxxxxxxxxxxxxxxxxxxx";
 
-            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1).Obj);
-            Assert.AreEqual("pants", Message.ExtractBeginString(m2).Obj);
+            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1.AsMemory()).Obj);
+            Assert.AreEqual("pants", Message.ExtractBeginString(m2.AsMemory()).Obj);
         }
 
         [Test]
@@ -420,7 +420,7 @@ namespace UnitTests
                 + "38=5.5\x01" + "40=1\x01" + "54=1\x01" + "55=ibm\x01" + "59=1\x01" + "60=20110901-13:41:31.804\x01"
                 + "377=Y\x01" + "201=1\x01"
                 + "10=63\x01";
-            n.FromString(s, true, dd, dd, _defaultMsgFactory);
+            n.FromString(s.AsMemory(), true, dd, dd, _defaultMsgFactory);
 
             // string values are good?
             Assert.AreEqual("Y", n.SolicitedFlag.ToString()); //bool, 377
@@ -445,15 +445,15 @@ namespace UnitTests
             string msgstr = "100=200\x01" + "300=400\x01" + "500=600\x01";
             int n = 0;
 
-            var x = QuickFix.Message.ExtractField(msgstr, ref n);
+            var x = QuickFix.Message.ExtractField(msgstr.AsMemory(), ref n);
             Assert.AreEqual(8, n);
             Assert.AreEqual("100=200", x.toStringField());
 
-            x = QuickFix.Message.ExtractField(msgstr, ref n);
+            x = QuickFix.Message.ExtractField(msgstr.AsMemory(), ref n);
             Assert.AreEqual(16, n);
             Assert.AreEqual("300=400", x.toStringField());
 
-            x = QuickFix.Message.ExtractField(msgstr, ref n);
+            x = QuickFix.Message.ExtractField(msgstr.AsMemory(), ref n);
             Assert.AreEqual(24, n);
             Assert.AreEqual("500=600", x.toStringField());
         }
@@ -515,7 +515,7 @@ namespace UnitTests
             Message msg = new Message();
             try
             {
-                msg.FromString(str1, true, null, null, _defaultMsgFactory);
+                msg.FromString(str1.AsMemory(), true, null, null, _defaultMsgFactory);
             }
             catch (InvalidMessage e)
             {
@@ -596,13 +596,13 @@ namespace UnitTests
             string[] msgFields = { "8=FIX.4.4", "9=104", "35=W", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012", "273=22:15:30.444", "10=19" };
             string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
-            Assert.AreEqual("W", Message.GetMsgType(msgStr));
+            Assert.AreEqual("W", Message.GetMsgType(msgStr.AsMemory()));
 
             // invalid 35 value, let it ride
             string[] msgFields2 = { "8=FIX.4.4", "9=68", "35=*", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=0", "10=9" };
             string msgStr2 = String.Join(Message.SOH, msgFields2) + Message.SOH;
-            Assert.AreEqual("*", Message.GetMsgType(msgStr2));
+            Assert.AreEqual("*", Message.GetMsgType(msgStr2.AsMemory()));
         }
 
         [Test]
@@ -729,7 +729,7 @@ namespace UnitTests
             string[] msgFields = { "8=FIX.4.2", "9=87", "35=B", "34=3", "49=CLIENT1", "52=20111012-22:15:55.474", "56=EXECUTOR", "148=AAAAAAA", "33=2", "58=L1", "58=L2", "10=016" };
             string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
             QuickFix.FIX42.News msg = new QuickFix.FIX42.News();
-            msg.FromString(msgStr, false, dd, dd, _defaultMsgFactory);
+            msg.FromString(msgStr.AsMemory(), false, dd, dd, _defaultMsgFactory);
             Assert.AreEqual(2, msg.GroupCount(Tags.LinesOfText)); // for sanity
 
             // the test
@@ -751,7 +751,7 @@ namespace UnitTests
             string[] msgFields = { "8=FIX.4.2", "9=87", "35=B", "34=3", "49=CLIENT1", "52=20111012-22:15:55.474", "56=EXECUTOR", "148=AAAAAAA", "33=2", "58=L1", "58=L2", "10=016" };
             string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
             QuickFix.FIX42.News msg = new QuickFix.FIX42.News();
-            msg.FromString(msgStr, false, dd, dd, _defaultMsgFactory);
+            msg.FromString(msgStr.AsMemory(), false, dd, dd, _defaultMsgFactory);
             Assert.AreEqual(2, msg.GroupCount(Tags.LinesOfText)); // for sanity
 
             // the test
@@ -782,7 +782,7 @@ namespace UnitTests
             QuickFix.FIX44.PositionReport msg = new QuickFix.FIX44.PositionReport();
 
             QuickFix.GroupDelimiterTagException ex =
-                Assert.Throws<QuickFix.GroupDelimiterTagException>(delegate { msg.FromString(msgStr, true, dd, dd, _defaultMsgFactory); });
+                Assert.Throws<QuickFix.GroupDelimiterTagException>(delegate { msg.FromString(msgStr.AsMemory(), true, dd, dd, _defaultMsgFactory); });
             Assert.AreEqual(702, ex.Field);
             Assert.AreEqual("Group 702's first entry does not start with delimiter 703", ex.Message);
         }
@@ -804,7 +804,7 @@ namespace UnitTests
 
             QuickFix.FIX44.MarketDataSnapshotFullRefresh msg = new QuickFix.FIX44.MarketDataSnapshotFullRefresh();
 
-            msg.FromString(msgStr, true, dd, dd, _defaultMsgFactory);
+            msg.FromString(msgStr.AsMemory(), true, dd, dd, _defaultMsgFactory);
             QuickFix.FIX44.MarketDataIncrementalRefresh.NoMDEntriesGroup gentry1 = new QuickFix.FIX44.MarketDataIncrementalRefresh.NoMDEntriesGroup();
             msg.GetGroup(1, gentry1);
             Assert.AreEqual(new DateTime(2012, 10, 24), gentry1.MDEntryDate.getValue());
@@ -873,7 +873,7 @@ namespace UnitTests
             string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
-            msg.FromString(msgStr, true, dd, dd, _defaultMsgFactory);
+            msg.FromString(msgStr.AsMemory(), true, dd, dd, _defaultMsgFactory);
 
             Assert.AreEqual(0.23, msg.Factor.getValue());
         }
@@ -888,12 +888,12 @@ namespace UnitTests
             string[] newsFields = { "8=FIX4.2", "9=5", "35=B", "10=133" };
             string newsStr = String.Join(Message.SOH, newsFields) + Message.SOH;
             QuickFix.FIX42.News news = new QuickFix.FIX42.News();
-            news.FromString(newsStr, true, dd, dd, _defaultMsgFactory);
+            news.FromString(newsStr.AsMemory(), true, dd, dd, _defaultMsgFactory);
 
             string[] hbFields = { "8=FIX.4.2", "9=16", "35=0", "34=3", "49=TW", "10=1" };
             string hbStr = String.Join(Message.SOH, hbFields) + Message.SOH;
             QuickFix.FIX42.Heartbeat heartbeat = new QuickFix.FIX42.Heartbeat();
-            heartbeat.FromString(hbStr, true, dd, dd, _defaultMsgFactory);
+            heartbeat.FromString(hbStr.AsMemory(), true, dd, dd, _defaultMsgFactory);
 
             Assert.False(news.IsAdmin());
             //Assert.True(news.IsApp());
@@ -920,7 +920,7 @@ namespace UnitTests
             dd.LoadFIXSpec("FIX44");
 
             Message msg = new Message();
-            msg.FromString(msgStr, false, dd, dd, _defaultMsgFactory);
+            msg.FromString(msgStr.AsMemory(), false, dd, dd, _defaultMsgFactory);
 
             // make sure no fields were dropped in parsing
             Assert.AreEqual(msgStr.Length, msg.ToString().Length);

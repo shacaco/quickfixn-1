@@ -113,6 +113,11 @@ namespace QuickFix
             AddWriteOperation(_messages, msg);
         }
 
+        public void OnIncoming(ReadOnlyMemory<char> msg)
+        {
+            AddWriteOperation(_messages, msg.Span);
+        }
+
         public void OnOutgoing(string msg)
         {
             AddWriteOperation(_messages, msg);
@@ -123,14 +128,14 @@ namespace QuickFix
             AddWriteOperation(_events, msg);
         }
 
-        private void AddWriteOperation(ConcurrentQueue<char[]> dest, string msg)
+        private void AddWriteOperation(ConcurrentQueue<char[]> dest, ReadOnlySpan<char> msg)
         {
             var b = _buffer.Dequeue();
             var timeStr = Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond).AsSpan();
             int index = 0;
             CopyToBuffer(ref b, timeStr, ref index);
             CopyToBuffer(ref b, Colon, ref index);
-            CopyToBuffer(ref b, msg.AsSpan(), ref index);
+            CopyToBuffer(ref b, msg, ref index);
             Array.Clear(b, index, b.Length - index);
             dest.Enqueue(b);
             _writeEvent.Set();

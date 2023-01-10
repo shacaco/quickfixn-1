@@ -554,9 +554,9 @@ namespace QuickFix
         /// Process a message (in string form) from the counterparty
         /// </summary>
         /// <param name="msgStr"></param>
-        public void Next(string msgStr)
+        public void Next(ReadOnlyMemory<char> msg)
         {
-            NextMessage(msgStr);
+            NextMessage(msg);
             NextQueued();
         }
 
@@ -566,7 +566,7 @@ namespace QuickFix
         /// locks _messageReusable to ensure reusable resources are not being used coccurrently
         /// </summary>
         /// <param name="msgStr"></param>
-        private void NextMessage(string msgStr)
+        private void NextMessage(ReadOnlyMemory<char> msgStr)
         {
             Utils.StopWatchRepo.TryStartWatch(out int id);
             this.Log.OnIncoming(msgStr);
@@ -829,7 +829,7 @@ namespace QuickFix
                     foreach (string msgStr in messages)
                     {
                         Message msg = new Message();
-                        msg.FromString(msgStr, true, this.SessionDataDictionary, this.ApplicationDataDictionary, msgFactory_);
+                        msg.FromString(msgStr.AsMemory(), true, this.SessionDataDictionary, this.ApplicationDataDictionary, msgFactory_);
                         msgSeqNum = msg.Header.GetInt(Tags.MsgSeqNum);
 
                         if ((current != msgSeqNum) && begin == 0)
@@ -1652,7 +1652,7 @@ namespace QuickFix
                 }
                 else
                 {
-                    NextMessage(msg.ToString());
+                    NextMessage(msg.ToString().AsMemory());
                 }
                 return true;
             }

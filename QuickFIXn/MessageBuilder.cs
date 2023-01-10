@@ -1,3 +1,4 @@
+using System;
 using QuickFix.Fields;
 using System.Linq;
 
@@ -12,8 +13,7 @@ namespace QuickFix
         private readonly MemoryField[] reusableFields = new MemoryField[100].Select(i => new MemoryField(-1)).ToArray();
         private readonly Message _reusableMessage = new Message();
         private Message _message;
-
-        public string OriginalString { get; private set; } 
+        private ReadOnlyMemory<char> _rawData;
 
         public StringField MsgType { get; private set; } = new StringField(-1);
 
@@ -35,15 +35,15 @@ namespace QuickFix
         internal Message Build(bool validateLengthAndChecksum)
         {
             _message = _reusableMessage.ClearAndInitialize(BeginString, MsgType);
-            _message.FromString(OriginalString, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
+            _message.FromString(_rawData, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
             return _message;
         }
 
-        internal void SetData(string msgStr)
+        internal void SetData(ReadOnlyMemory<char> msg)
         {
-            OriginalString = msgStr;
-            MsgType = Message.IdentifyType(msgStr, MsgType);
-            BeginString = Message.ExtractBeginString(msgStr, BeginString);
+            _rawData = msg;
+            MsgType = Message.IdentifyType(msg, MsgType);
+            BeginString = Message.ExtractBeginString(msg, BeginString);
             _message = null;
         }
 
@@ -54,7 +54,7 @@ namespace QuickFix
 
             Message message = _msgFactory.Create(BeginString.Obj, MsgType.Obj);
             message.FromString(
-                OriginalString,
+                _rawData,
                 false,
                 _sessionDD,
                 _appDD,
