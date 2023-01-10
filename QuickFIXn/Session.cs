@@ -1511,8 +1511,7 @@ namespace QuickFix
         private static IntField GetIntField(IntField reusable, int tag, int value)
         {
             var field = reusable ?? IntField.Factory.GetNext();
-            field.Tag = tag;
-            field.setValue(value);
+            field.Set(tag, value);
             return field;
         }
 

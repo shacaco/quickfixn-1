@@ -16,7 +16,7 @@ namespace QuickFix.Fields
         /// </summary>
         /// <param name="tag">the FIX tag number</param>
         /// <param name="obj">the value of the field</param>
-        public FieldBase(int tag, T obj)
+        protected FieldBase(int tag, T obj)
         {
             _tag = tag;
             _obj = obj;
