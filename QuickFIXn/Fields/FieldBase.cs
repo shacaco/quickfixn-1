@@ -48,6 +48,13 @@ namespace QuickFix.Fields
         }
         #endregion
 
+        public FieldBase<T> Set(int tag, T obj)
+        {
+            Tag = tag;
+            Obj = obj;
+            return this;
+        }
+
         /// <summary>
         /// returns full fix string (e.g. "tag=val")
         /// </summary>
