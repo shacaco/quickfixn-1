@@ -24,7 +24,7 @@ namespace QuickFix
         /// <param name="msgSeqNum">the sequence number</param>
         /// <param name="msg">the raw FIX message string</param>
         /// <returns>true if successful, false otherwise</returns>
-        bool Set(int msgSeqNum, string msg);
+        bool Set(int msgSeqNum, ReadOnlySpan<char> msg);
 
         int NextSenderMsgSeqNum { get; set; }
         int NextTargetMsgSeqNum { get; set; }

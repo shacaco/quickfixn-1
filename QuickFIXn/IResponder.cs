@@ -1,4 +1,6 @@
-﻿namespace QuickFix
+﻿using System;
+
+namespace QuickFix
 {
     /// <summary>
     /// Used by a Session to send raw FIX message data and to disconnect a
@@ -11,7 +13,7 @@
         /// </summary>
         /// <param name="s">the raw FIX message data</param>
         /// <returns>true if successful, false if send operation failed</returns>
-        bool Send(string s);
+        bool Send(ReadOnlySpan<char> s);
 
         /// <summary>
         /// Disconnect the underlying connection

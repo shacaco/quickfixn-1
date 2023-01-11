@@ -147,7 +147,7 @@ namespace QuickFix
         /// Reset sequence numbers on logon request
         /// </summary>
         public bool ResetOnLogon { get; set; }
-     
+
         /// <summary>
         /// Reset target sequence number on session creation (used to rebuild state from server)
         /// </summary>
@@ -390,7 +390,7 @@ namespace QuickFix
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public bool Send(string message)
+        public bool Send(ReadOnlySpan<char> message)
         {
             lock (sync_)
             {
@@ -554,26 +554,23 @@ namespace QuickFix
         /// Process a message (in string form) from the counterparty
         /// </summary>
         /// <param name="msgStr"></param>
-        public void Next(ReadOnlyMemory<char> msg)
+        public void Next(ReadOnlySpan<char> msg)
         {
             NextMessage(msg);
             NextQueued();
         }
 
-        private object _messageReusable = new object();
         /// <summary>
         /// Process a message (in string form) from the counterparty
         /// locks _messageReusable to ensure reusable resources are not being used coccurrently
         /// </summary>
-        /// <param name="msgStr"></param>
-        private void NextMessage(ReadOnlyMemory<char> msgStr)
+        /// <param name="msg"></param>
+        private void NextMessage(ReadOnlySpan<char> msg)
         {
             Utils.StopWatchRepo.TryStartWatch(out int id);
-            this.Log.OnIncoming(msgStr);
-            _messageBuilder.SetData(msgStr);
+            this.Log.OnIncoming(msg);
             LastIncomingMessageTime = PreciseDateTime.Now;
-            lock (_messageReusable)
-                Next(_messageBuilder);
+            Next(_messageBuilder, msg);
             Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", id);
         }
 
@@ -581,7 +578,7 @@ namespace QuickFix
         /// Process a message from the counterparty.
         /// </summary>
         /// <param name="msgBuilder"></param>
-        internal void Next(MessageBuilder msgBuilder)
+        internal void Next(MessageBuilder msgBuilder, ReadOnlySpan<char> msg)
         {
             if (!IsSessionTime)
             {
@@ -596,10 +593,10 @@ namespace QuickFix
 
             try
             {
-                message = msgBuilder.Build(ValidateLengthAndChecksum);
+                message = msgBuilder.Build(msg, ValidateLengthAndChecksum);
 
                 if (appDoesEarlyIntercept_)
-                    ((IApplicationExt) Application).FromEarlyIntercept(message, this.SessionID);
+                    ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
 
                 Header header = message.Header;
                 string msgType = msgBuilder.MsgType.Obj;
@@ -829,7 +826,7 @@ namespace QuickFix
                     foreach (string msgStr in messages)
                     {
                         Message msg = new Message();
-                        msg.FromString(msgStr.AsMemory(), true, this.SessionDataDictionary, this.ApplicationDataDictionary, msgFactory_);
+                        msg.FromString(msgStr, true, this.SessionDataDictionary, this.ApplicationDataDictionary, msgFactory_);
                         msgSeqNum = msg.Header.GetInt(Tags.MsgSeqNum);
 
                         if ((current != msgSeqNum) && begin == 0)
@@ -1506,8 +1503,6 @@ namespace QuickFix
             reject.SetField(new Fields.Text(text));
         }
 
-
-
         private static IntField GetIntField(IntField reusable, int tag, int value)
         {
             var field = reusable ?? IntField.Factory.GetNext();
@@ -1568,12 +1563,12 @@ namespace QuickFix
             header.SetField(GetDateTimeField(reusableSendingTime, SendingTime.TAG, MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
         }
 
-        protected void Persist(Message message, string messageString)
+        protected void Persist(Message message, ReadOnlySpan<char> messageSpan)
         {
             if (this.PersistMessages)
             {
                 int msgSeqNum = message.Header.GetInt(Fields.Tags.MsgSeqNum);
-                state_.Set(msgSeqNum, messageString);
+                state_.Set(msgSeqNum, messageSpan);
             }
             state_.IncrNextSenderMsgSeqNum();
         }
@@ -1629,6 +1624,7 @@ namespace QuickFix
 
             header.SetField(new OrigSendingTime(sendingTime, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
         }
+      
         protected void NextQueued()
         {
             while (NextQueued(state_.MessageStore.NextTargetMsgSeqNum))
@@ -1652,7 +1648,7 @@ namespace QuickFix
                 }
                 else
                 {
-                    NextMessage(msg.ToString().AsMemory());
+                    NextMessage(msg.ToString().AsSpan());
                 }
                 return true;
             }
@@ -1668,6 +1664,8 @@ namespace QuickFix
         private readonly IntField _reusableSendRawSeqNum = new IntField(MsgSeqNum.TAG);
         private readonly IntField _reusableLastMsgSeqNumProcessed = new IntField(LastMsgSeqNumProcessed.TAG);
         private readonly DateTimeField _reusableSendRawSendingTime = new DateTimeField(SendingTime.TAG);
+        private readonly char[] _sendBuffer = new char[1024];
+      
         protected bool SendRaw(Message message, int seqNum)
         {
             lock (sync_)
@@ -1705,10 +1703,10 @@ namespace QuickFix
                     }
                 }
 
-                string messageString = message.ToString(OrderBodyFieldsOnSend);
+                var length = message.ToCharArray(OrderBodyFieldsOnSend, _sendBuffer);
                 if (0 == seqNum)
-                    Persist(message, messageString);
-                return Send(messageString);
+                    Persist(message, _sendBuffer.AsSpan(0, length));
+                return Send(_sendBuffer.AsSpan(0, length));
             }
         }
 

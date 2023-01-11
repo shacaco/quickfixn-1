@@ -30,7 +30,7 @@ namespace QuickFix
         private System.IO.FileStream seqNumsFile_;
         private System.IO.FileStream msgFile_;
         private System.IO.StreamWriter headerFile_;
-
+        private readonly byte[] _writeBuffer = new byte[1024];
         private MemoryStore cache_ = new MemoryStore();
 
         System.Collections.Generic.Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
@@ -196,29 +196,28 @@ namespace QuickFix
             }
 
         }
-        
+
         /// <summary>
         /// Store a message
         /// </summary>
         /// <param name="msgSeqNum"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public bool Set(int msgSeqNum, string msg)
+        public bool Set(int msgSeqNum, ReadOnlySpan<char> msg)
         {
             msgFile_.Seek(0, System.IO.SeekOrigin.End);
 
             long offset = msgFile_.Position;
-            byte[] msgBytes = CharEncoding.DefaultEncoding.GetBytes(msg);
-            int size = msgBytes.Length;
+            var length = CharEncoding.DefaultEncoding.GetBytes(msg, _writeBuffer);
 
             StringBuilder b = new StringBuilder();
-            b.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(size);
+            b.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
             headerFile_.WriteLine(b.ToString());
             headerFile_.Flush();
 
-            offsets_[msgSeqNum] = new MsgDef(offset, size);
+            offsets_[msgSeqNum] = new MsgDef(offset, length);
 
-            msgFile_.Write(msgBytes, 0, size);
+            msgFile_.Write(_writeBuffer, 0, length);
             msgFile_.Flush();
 
 

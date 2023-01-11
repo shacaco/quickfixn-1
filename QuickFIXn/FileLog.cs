@@ -89,28 +89,23 @@ namespace QuickFix
             }
         }
 
-        public void OnIncoming(string msg)
+        public void OnIncoming(ReadOnlySpan<char> msg)
         {
             DisposedCheck();
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg);
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
             }
         }
 
-        public void OnIncoming(ReadOnlyMemory<char> msg)
-        {
-            OnIncoming(msg.ToString());
-        }
-
-        public void OnOutgoing(string msg)
+        public void OnOutgoing(ReadOnlySpan<char> msg)
         {
             DisposedCheck();
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg);
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
             }
         }
 

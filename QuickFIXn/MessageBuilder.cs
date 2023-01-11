@@ -10,10 +10,9 @@ namespace QuickFix
         private readonly DataDictionary.DataDictionary _appDD;
         private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
         private readonly IMessageFactory _msgFactory;
-        private readonly MemoryField[] reusableFields = new MemoryField[100].Select(i => new MemoryField(-1)).ToArray();
+        private readonly StringField[] reusableFields = new StringField[100].Select(i => new StringField(-1)).ToArray();
         private readonly Message _reusableMessage = new Message();
         private Message _message;
-        private ReadOnlyMemory<char> _rawData;
 
         public StringField MsgType { get; private set; } = new StringField(-1);
 
@@ -32,35 +31,18 @@ namespace QuickFix
             _msgFactory = msgFactory;
         }
 
-        internal Message Build(bool validateLengthAndChecksum)
+        internal Message Build(ReadOnlySpan<char> msg, bool validateLengthAndChecksum)
         {
-            _message = _reusableMessage.ClearAndInitialize(BeginString, MsgType);
-            _message.FromString(_rawData, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
-            return _message;
-        }
-
-        internal void SetData(ReadOnlyMemory<char> msg)
-        {
-            _rawData = msg;
             MsgType = Message.IdentifyType(msg, MsgType);
             BeginString = Message.ExtractBeginString(msg, BeginString);
-            _message = null;
+            _message = _reusableMessage.ClearAndInitialize(BeginString, MsgType);
+            _message.FromString(msg, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
+            return _message;
         }
 
         internal Message RejectableMessage()
         {
-            if (_message != null)
-                return _message;
-
-            Message message = _msgFactory.Create(BeginString.Obj, MsgType.Obj);
-            message.FromString(
-                _rawData,
-                false,
-                _sessionDD,
-                _appDD,
-                _msgFactory,
-                true);
-            return message;
+            return _message;
         }
     }
 }

@@ -55,16 +55,13 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream((CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2 + fixMsg3)));
 
-            ReadOnlyMemory<char> readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
             Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
 
-            ReadOnlyMemory<char> readFixMsg2;
-            Assert.True(parser.ReadFixMessage(out readFixMsg2));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg2));
             Assert.AreEqual(fixMsg2, readFixMsg2.ToString());
 
-            ReadOnlyMemory<char> readFixMsg3;
-            Assert.True(parser.ReadFixMessage(out readFixMsg3));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg3));
             Assert.AreEqual(fixMsg3, readFixMsg3.ToString());
         }
 
@@ -81,8 +78,7 @@ namespace UnitTests
             {
                 parser.AddToStream(combined);
 
-                ReadOnlyMemory<char> readFixMsg1;
-                parser.ReadFixMessage(out readFixMsg1);
+                parser.ReadFixMessage(out var readFixMsg1);
             }
             TestContext.WriteLine($"time={sw.Elapsed}");
         }
@@ -96,8 +92,7 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg1));
 
-            ReadOnlyMemory<char> readPartFixMsg;
-            Assert.False(parser.ReadFixMessage(out readPartFixMsg));
+            Assert.False(parser.ReadFixMessage(out var readPartFixMsg));
 
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg2));
             Assert.True(parser.ReadFixMessage(out readPartFixMsg));
@@ -112,11 +107,11 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg));
 
-            ReadOnlyMemory<char> readFixMsg;
-            Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out readFixMsg); });
+
+            Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out var readFixMsg); });
             
             // nothing thrown now because the previous call removes bad data from buffer:
-            Assert.DoesNotThrow(delegate { parser.ReadFixMessage(out readFixMsg); });
+            Assert.DoesNotThrow(delegate { parser.ReadFixMessage(out var readFixMsg); });
         }
 
         [Test]
@@ -138,12 +133,10 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2));
 
-            ReadOnlyMemory<char> readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
             Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
 
-            ReadOnlyMemory<char> readFixMsg2;
-            Assert.True(parser.ReadFixMessage(out readFixMsg2));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg2));
             Assert.AreEqual(fixMsg2, readFixMsg2.ToString());
         }
 
@@ -156,8 +149,7 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1));
 
-            ReadOnlyMemory<char> readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
             Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
         }
     }

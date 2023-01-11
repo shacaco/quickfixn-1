@@ -97,18 +97,18 @@ namespace QuickFix
             : this()
         {
             this.ApplicationDataDictionary = dataDictionary;
-            FromString(msgstr.AsMemory(), validate, dataDictionary, dataDictionary, null);
+            FromString(msgstr, validate, dataDictionary, dataDictionary, null);
         }
 
         public Message(string msgstr, DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, bool validate)
             : this()
         {
             this.ApplicationDataDictionary = appDD;
-            FromStringHeader(msgstr.AsMemory());
+            FromStringHeader(msgstr);
             if (IsAdmin())
-                FromString(msgstr.AsMemory(), validate, sessionDataDictionary, sessionDataDictionary, null);
+                FromString(msgstr, validate, sessionDataDictionary, sessionDataDictionary, null);
             else
-                FromString(msgstr.AsMemory(), validate, sessionDataDictionary, appDD, null);
+                FromString(msgstr, validate, sessionDataDictionary, appDD, null);
         }
 
         public Message(Message src)
@@ -136,50 +136,22 @@ namespace QuickFix
         /// <param name="reusableField"></param>
         /// <returns>the message type as a MsgType object</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static StringField IdentifyType(ReadOnlyMemory<char> fixstring, StringField reusableField = null)
+        public static StringField IdentifyType(ReadOnlySpan<char> fixstring, StringField reusableField = null)
         {
             var f = reusableField ?? StringField.Factory.GetNext();
             f.Set(MsgType.TAG, GetMsgType(fixstring));
             return f;
         }
 
-        public static MemoryField ExtractField(ReadOnlyMemory<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, MemoryField field = null)
+        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
         {
             try
             {
-                int tagLength = msg.Slice(pos).Span.IndexOf(Equal.AsSpan(), StringComparison.Ordinal);
-                int tag = int.Parse(msg.Slice(pos, tagLength).Span);
+                int tagLength = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal);
+                int tag = int.Parse(msg.Slice(pos, tagLength));
                 pos += tagLength + 1;
-                int fieldValueLength = msg.Slice(pos).Span.IndexOf(SOH.AsSpan(), StringComparison.Ordinal);
-                field ??= MemoryField.Factory.GetNext();
-                field.Set(tag, msg.Slice(pos, fieldValueLength));
-
-                pos += fieldValueLength + 1;
-                return field;
-            }
-            catch (System.ArgumentOutOfRangeException e)
-            {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
-            }
-            catch (System.OverflowException e)
-            {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
-            }
-            catch (System.FormatException e)
-            {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
-            }
-        }
-
-        public static StringField ExtractField(ReadOnlyMemory<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
-        {
-            try
-            {
-                int tagLength = msg.Slice(pos).Span.IndexOf(Equal.AsSpan(), StringComparison.Ordinal);
-                int tag = int.Parse(msg.Slice(pos, tagLength).Span);
-                pos += tagLength + 1;
-                int fieldValueLength = msg.Slice(pos).Span.IndexOf(SOH.AsSpan(), StringComparison.Ordinal);
-                field ??= StringField.Factory.GetNext();
+                int fieldValueLength = msg.Slice(pos).IndexOf(SOH, StringComparison.Ordinal);
+                field ??= StringField.Factory.GetNext();    
                 field.Set(tag, msg.Slice(pos, fieldValueLength).ToString());
 
                 pos += fieldValueLength + 1;
@@ -187,24 +159,24 @@ namespace QuickFix
             }
             catch (System.ArgumentOutOfRangeException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
             catch (System.OverflowException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
             catch (System.FormatException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
         }
 
-        public static MemoryField ExtractField(ReadOnlyMemory<char> msgstr, ref int pos)
+        public static StringField ExtractField(ReadOnlySpan<char> msgstr, ref int pos)
         {
-            return ExtractField(msgstr, ref pos, null, null, default(MemoryField));
+            return ExtractField(msgstr, ref pos, null, null);
         }
 
-        public static StringField ExtractBeginString(ReadOnlyMemory<char> msgstr, StringField reusableField = null)
+        public static StringField ExtractBeginString(ReadOnlySpan<char> msgstr, StringField reusableField = null)
         {
             int i = 0;
             return ExtractField(msgstr, ref i, null, null, reusableField);
@@ -320,27 +292,27 @@ namespace QuickFix
         /// <param name="msg">the FIX string to parse</param>
         /// <returns>message type</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static string GetMsgType(ReadOnlyMemory<char> msg)
+        public static string GetMsgType(ReadOnlySpan<char> msg)
         {
             try
             {
-                var msgTypeTagIndex = msg.Span.IndexOf(MSG_TYPE_STRING, StringComparison.Ordinal);
+                var msgTypeTagIndex = msg.IndexOf(MSG_TYPE_STRING, StringComparison.Ordinal);
                 if (msgTypeTagIndex < 0)
                     throw new Exception();
 
                 var objStartIndex = msgTypeTagIndex + MSG_TYPE_STRING.Length;
-                var nextSOHWithin = msg.Span.Slice(objStartIndex).IndexOf(SOH, StringComparison.Ordinal);
+                var nextSOHWithin = msg.Slice(objStartIndex).IndexOf(SOH, StringComparison.Ordinal);
                 if (nextSOHWithin < 0)
                     throw new Exception();
 
-                var nextEquals = msg.Span.Slice(objStartIndex).IndexOf(Equal, StringComparison.Ordinal);
+                var nextEquals = msg.Slice(objStartIndex).IndexOf(Equal, StringComparison.Ordinal);
                 if (nextEquals > 0 && nextEquals < nextSOHWithin)
                     throw new Exception();
-                return msg.Span.Slice(objStartIndex, nextSOHWithin).ToString();
+                return msg.Slice(objStartIndex, nextSOHWithin).ToString();
             }
             catch (Exception)
             {
-                throw new MessageParseError("missing or malformed tag 35 in msg: " + msg);
+                throw new MessageParseError("missing or malformed tag 35 in msg: " + msg.ToString());
             }
         }
 
@@ -371,7 +343,7 @@ namespace QuickFix
 
         #endregion
 
-        public bool FromStringHeader(ReadOnlyMemory<char> msg)
+        public bool FromStringHeader(ReadOnlySpan<char> msg)
         {
             Clear();
 
@@ -379,7 +351,7 @@ namespace QuickFix
             int count = 0;
             while (pos < msg.Length)
             {
-                MemoryField f = ExtractField(msg, ref pos);
+                StringField f = ExtractField(msg, ref pos);
 
                 if ((count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     return false;
@@ -399,7 +371,7 @@ namespace QuickFix
         /// <param name="validate"></param>
         /// <param name="sessionDD"></param>
         /// <param name="appDD"></param>
-        public void FromString(ReadOnlyMemory<char> msg, bool validate, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
+        public void FromString(ReadOnlySpan<char> msg, bool validate, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
         {
             this.ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, null);
@@ -414,8 +386,8 @@ namespace QuickFix
         /// <param name="appDD"></param>
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
         /// <param name="reusableFields"></param>
-        public void FromString(ReadOnlyMemory<char> msg, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, MemoryField[] reusableFields = null)
+        public void FromString(ReadOnlySpan<char> msg, bool validate,
+            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, StringField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, msgFactory, false, reusableFields);
@@ -433,9 +405,9 @@ namespace QuickFix
         ///   Intended for callers that only need rejection-related information from the header.
         ///   </param>
         /// <param name="reusableFields"></param>
-        public void FromString(ReadOnlyMemory<char> msgstr, bool validate,
+        public void FromString(ReadOnlySpan<char> msgstr, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
-            bool ignoreBody, MemoryField[] reusableFields = null)
+            bool ignoreBody, StringField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
             Clear();
@@ -448,7 +420,7 @@ namespace QuickFix
             int reusableFieldsIndex = 0;
             while (pos < msgstr.Length)
             {
-                MemoryField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
+                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
 
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
@@ -598,7 +570,7 @@ namespace QuickFix
         /// <param name="msgFactory">if null, then this method will use the generic Group class constructor</param>
         /// <returns></returns>
         protected int SetGroup(
-            MemoryField grpNoFld, ReadOnlyMemory<char> msg, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
+            StringField grpNoFld, ReadOnlySpan<char> msg, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
             DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             int grpEntryDelimiterTag = groupDD.Delim;
@@ -608,7 +580,7 @@ namespace QuickFix
             while (pos < msg.Length)
             {
                 grpPos = pos;
-                MemoryField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD, default(MemoryField));
+                StringField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD);
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -903,7 +875,25 @@ namespace QuickFix
             return ToString(false);
         }
 
+        public int ToCharArray(bool orderBodyPostFieldOrder, char[] chars)
+        {
+            lock (lock_ToString)
+            {
+                var b = ToStringBuilder(orderBodyPostFieldOrder);
+                b.CopyTo(0, chars, b.Length);
+                return b.Length;
+            }
+        }
+
         public string ToString(bool orderBodyPostFieldOrder)
+        {
+            lock (lock_ToString)
+            {
+               return ToStringBuilder(orderBodyPostFieldOrder).ToString();
+            }
+        }
+
+        public StringBuilder ToStringBuilder(bool orderBodyPostFieldOrder)
         {
             lock (lock_ToString)
             {
@@ -915,7 +905,7 @@ namespace QuickFix
                 this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 this.Trailer.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
-                return _toStringBuilder.ToString();
+                return _toStringBuilder;
             }
         }
 

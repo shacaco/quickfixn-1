@@ -26,6 +26,7 @@ namespace QuickFix
         private IPEndPoint socketEndPoint_;
         protected SocketSettings socketSettings_;
         private bool isDisconnectRequested_ = false;
+        private readonly byte[] _sendBytes = new byte[1024];
 
         public SocketInitiatorThread(Transport.SocketInitiator initiator, Session session, IPEndPoint socketEndPoint, SocketSettings socketSettings)
         {
@@ -104,7 +105,7 @@ namespace QuickFix
                     else
                         Disconnect();
                 }
-                return false;                    
+                return false;
             }
             catch (System.Exception e)
             {
@@ -177,7 +178,7 @@ namespace QuickFix
 
         private void ProcessStream()
         {
-            ReadOnlyMemory<char> msg;
+            ReadOnlySpan<char> msg;
             while (parser_.ReadFixMessage(out msg))
             {
                 session_.Next(msg);
@@ -186,10 +187,10 @@ namespace QuickFix
 
         #region Responder Members
 
-        public bool Send(string data)
+        public bool Send(ReadOnlySpan<char> data)
         {
-            byte[] rawData = CharEncoding.DefaultEncoding.GetBytes(data);
-            stream_.Write(rawData, 0, rawData.Length);
+            var length = CharEncoding.DefaultEncoding.GetBytes(data, _sendBytes);
+            stream_.Write(_sendBytes, 0, length);
             return true;
         }
 

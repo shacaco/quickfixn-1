@@ -42,7 +42,7 @@ namespace QuickFix
             DoAddToStream(data, data.Length);
         }
 
-        public bool ReadFixMessage(out ReadOnlyMemory<char> msg)
+        public bool ReadFixMessage(out ReadOnlySpan<char> msg)
         {
             msg = null;
 
@@ -81,7 +81,7 @@ namespace QuickFix
                 totalMsgLength += index + 1;
 
                 var totalChars = CharEncoding.DefaultEncoding.GetChars(buffer_, msgStartPos, totalMsgLength, _currentMsg, 0);//cut message to size
-                msg = _currentMsg.AsMemory(0, totalChars);
+                msg = _currentMsg.AsSpan(0, totalChars);
                 buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }

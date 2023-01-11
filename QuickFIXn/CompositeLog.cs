@@ -24,19 +24,14 @@ namespace QuickFix
                 log.Clear();
         }
 
-        public void OnIncoming(string msg)
+        public void OnIncoming(ReadOnlySpan<char> msg)
         {
             DisposedCheck();
             foreach (var log in logs_)
                 log.OnIncoming(msg);
         }
 
-        public void OnIncoming(ReadOnlyMemory<char> msg)
-        {
-            OnIncoming(msg.ToString());
-        }
-
-        public void OnOutgoing(string msg)
+        public void OnOutgoing(ReadOnlySpan<char> msg)
         {
             DisposedCheck();
             foreach (var log in logs_)

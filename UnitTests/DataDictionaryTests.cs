@@ -313,7 +313,7 @@ namespace UnitTests
                 + "60=20111011-15:06:23.103" + nul
                 + "10=35" + nul;
 
-            n.FromString(s.AsMemory(), true, dd, dd, _defaultMsgFactory);
+            n.FromString(s, true, dd, dd, _defaultMsgFactory);
 
             //verify that FromString didn't correct the counter
             //HEY YOU, READ THIS NOW: if these fail, first check if MessageTests::FromString_DoNotCorrectCounter() passes
@@ -340,7 +340,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -357,11 +357,11 @@ namespace UnitTests
                 + "52=20111012-22:15:55.474" + nul + "56=EXECUTOR" + nul + "148=AAAAAAA" + nul
                 + "33=2" + nul + "58=L1" + nul + "58=L2" + nul + "10=016" + nul;
 
-            StringField msgType = Message.IdentifyType(msgStr.AsMemory());
-            string beginString = Message.ExtractBeginString(msgStr.AsMemory()).Obj;
+            StringField msgType = Message.IdentifyType(msgStr);
+            string beginString = Message.ExtractBeginString(msgStr).Obj;
 
             Message message = f.Create(beginString, msgType.Obj);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             dd.Validate(message, beginString, msgType.Obj);
         }
@@ -383,7 +383,7 @@ namespace UnitTests
             // note: length and checksum might be garbage
             string msgStr = pipedStr.Replace("|", Message.SOH);
 
-            string beginString = Message.ExtractBeginString(msgStr.AsMemory()).Obj;
+            string beginString = Message.ExtractBeginString(msgStr).Obj;
             Message msg = new Message(msgStr, dd, false);
 
             // true param means body-only, i.e. don't validate length/checksum
@@ -421,7 +421,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -447,7 +447,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -467,7 +467,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             try
             {
@@ -497,7 +497,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -518,7 +518,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -539,7 +539,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectDataFormat>());
         }
@@ -570,7 +570,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             dd.Validate(message, beginString, msgType);
         }
@@ -590,7 +590,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd, f);
+            message.FromString(msgStr, true, dd, dd, f);
 
             var ex = Assert.Throws<QuickFix.RequiredTagMissing>(delegate { dd.Validate(message, beginString, msgType); });
             Assert.AreEqual(55, ex.Field);
@@ -635,7 +635,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create( beginString, msgType );
-            message.FromString( msgStr.AsMemory(), true, dd, dd );
+            message.FromString( msgStr, true, dd, dd );
 
             dd.Validate( message, beginString, msgType );
         }
@@ -657,7 +657,7 @@ namespace UnitTests
             string beginString = "FIX.4.4";
 
             Message message = f.Create( beginString, msgType );
-            message.FromString( msgStr.AsMemory(), true, dd, dd );
+            message.FromString( msgStr, true, dd, dd );
 
             Assert.That(() => dd.Validate(message, beginString, msgType), Throws.TypeOf<QuickFix.IncorrectTagValue>());
         }
@@ -677,7 +677,7 @@ namespace UnitTests
             string beginString = "FIX.4.2";
 
             Message message = f.Create(beginString, msgType);
-            message.FromString(msgStr.AsMemory(), true, dd, dd);
+            message.FromString(msgStr, true, dd, dd);
 
             dd.CheckFieldsHaveValues = true;
             Assert.Throws<QuickFix.NoTagValue>(delegate { dd.Validate(message, beginString, msgType); });

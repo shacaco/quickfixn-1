@@ -18,6 +18,7 @@ namespace QuickFix
         private TcpClient tcpClient_;
         private ClientHandlerThread responder_;
         private readonly AcceptorSocketDescriptor acceptorDescriptor_;
+        private readonly byte[] _sendBuffer = new byte[1024];
 
         /// <summary>
         /// Keep a handle to the current outstanding read request (if any)
@@ -122,7 +123,7 @@ namespace QuickFix
             }
         }
 
-        private void OnMessageFound(ReadOnlyMemory<char> msg)
+        private void OnMessageFound(ReadOnlySpan<char> msg)
         {
             try
             {
@@ -136,7 +137,7 @@ namespace QuickFix
                         DisconnectClient();
                         return;
                     }
-                    else if(IsAssumedSession(qfSession_.SessionID))
+                    else if (IsAssumedSession(qfSession_.SessionID))
                     {
                         this.Log("ERROR: Disconnecting; received message for unknown session: " + msgString);
                         qfSession_ = null;
@@ -169,7 +170,7 @@ namespace QuickFix
             }
         }
 
-        protected void HandleBadMessage(ReadOnlyMemory<char> msg, System.Exception e)
+        protected void HandleBadMessage(ReadOnlySpan<char> msg, System.Exception e)
         {
             try
             {
@@ -187,7 +188,7 @@ namespace QuickFix
             { }
         }
 
-        protected bool ReadMessage(out ReadOnlyMemory<char> msg)
+        protected bool ReadMessage(out ReadOnlySpan<char> msg)
         {
             try
             {
@@ -202,7 +203,7 @@ namespace QuickFix
 
         protected void ProcessStream()
         {
-            ReadOnlyMemory<char> msg;
+            ReadOnlySpan<char> msg;
             while (ReadMessage(out msg))
                 OnMessageFound(msg);
         }
@@ -237,7 +238,7 @@ namespace QuickFix
 
         private bool IsAssumedSession(SessionID sessionID)
         {
-            return acceptorDescriptor_ != null 
+            return acceptorDescriptor_ != null
                    && !acceptorDescriptor_.GetAcceptedSessions().Any(kv => kv.Key.Equals(sessionID));
         }
 
@@ -307,11 +308,12 @@ namespace QuickFix
             responder_.Log(s);
         }
 
-        public int Send(string data)
+        public int Send(ReadOnlySpan<char> data)
         {
-            byte[] rawData = CharEncoding.DefaultEncoding.GetBytes(data);
-            stream_.Write(rawData, 0, rawData.Length);
-            return rawData.Length;
+            var length = CharEncoding.DefaultEncoding.GetBytes(data, _sendBuffer);
+
+            stream_.Write(_sendBuffer, 0, length);
+            return length;
         }
 
         public void Dispose()
