@@ -9,7 +9,7 @@ namespace QuickFix
     /// </summary>
     public class Parser
     {
-        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new(4, true, true, () => new byte[512]);
+        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new(4, true, true, () => new byte[1024]);
         private static readonly byte[] Message9TagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "9=");
         private static readonly byte[] MessageChecksumTagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "10=");
         private static readonly byte[] MessageBeginStringTag = CharEncoding.DefaultEncoding.GetBytes("8=");

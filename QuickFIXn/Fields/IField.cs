@@ -11,7 +11,7 @@ namespace QuickFix.Fields
         public abstract int Tag { get; set; }
         #endregion
 
-        public abstract StringBuilder appendStringFieldTo(StringBuilder builder);
+        public abstract StringBuilder AppendFieldAsStringTo(StringBuilder builder);
         /// <summary>
         /// returns full fix string: tag=val
         /// </summary>

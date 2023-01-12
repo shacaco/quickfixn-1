@@ -610,7 +610,7 @@ namespace QuickFix
 
         public virtual StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(sb ?? new StringBuilder(64), FieldOrder ?? Array.Empty<int>(), orderPostFieldOrder);
+            var result = CalculateString(sb ?? new StringBuilder(1024), FieldOrder ?? Array.Empty<int>(), orderPostFieldOrder);
             return result;
         }
 
@@ -627,7 +627,7 @@ namespace QuickFix
                 var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    _fields[preField].appendStringFieldTo(sb).Append(Message.SOH);
+                    _fields[preField].AppendFieldAsStringTo(sb).Append(Message.SOH);
                     if (_groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
@@ -645,7 +645,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    field.Value.appendStringFieldTo(sb).Append(Message.SOH);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.SOH);
                 }
             }
             else
@@ -656,7 +656,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    field.Value.appendStringFieldTo(sb).Append(Message.SOH);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.SOH);
                 }
             }
 
@@ -669,7 +669,7 @@ namespace QuickFix
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
            
-                _fields[counterTag.Key].appendStringFieldTo(sb).Append(Message.SOH);
+                _fields[counterTag.Key].AppendFieldAsStringTo(sb).Append(Message.SOH);
 
                 foreach (Group group in groupList)
                     group.CalculateString(true, sb);

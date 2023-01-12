@@ -55,7 +55,7 @@ namespace UnitTests
             Assert.Throws(typeof(MessageParseError),
                 delegate { Message.ExtractField("35=A", ref pos); });
             Assert.Throws(typeof(MessageParseError),
-                delegate { Message.ExtractField(("\x01" + "35=A"), ref pos); });
+                delegate { Message.ExtractField("\x01" + "35=A", ref pos); });
             Assert.Throws(typeof(MessageParseError),
                 delegate { Message.ExtractField("35=\x01", ref pos); });
         }

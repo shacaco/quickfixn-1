@@ -159,7 +159,7 @@ namespace QuickFix.Fields
             _valChanged = false;
         }
 
-        public override StringBuilder appendStringFieldTo(StringBuilder builder)
+        public override StringBuilder AppendFieldAsStringTo(StringBuilder builder)
         {
             if (_fieldChanged)
                 buildStringField();
