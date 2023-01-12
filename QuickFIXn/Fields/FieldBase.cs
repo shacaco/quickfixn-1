@@ -61,7 +61,7 @@ namespace QuickFix.Fields
         public override string toStringField()
         {
             if (_fieldChanged)
-                makeStringField();
+                buildStringField();
             return _stringField ??= _sb.ToString();
         }
 
@@ -100,7 +100,7 @@ namespace QuickFix.Fields
         public override int getLength()
         {
             if (_fieldChanged)
-                makeStringField();
+                buildStringField();
             return _bytesLength;
         }
 
@@ -110,7 +110,7 @@ namespace QuickFix.Fields
         public override unsafe int  getTotal()
         {
             if (_fieldChanged)
-                makeStringField();
+                buildStringField();
             return _bytesTotal;
         }
 
@@ -122,8 +122,9 @@ namespace QuickFix.Fields
                 buffer[i] = _sb[i];
             }
 
-            var bytePtrLength = (int) (_sb.Length * 1.5) + 3;
+            var bytePtrLength = CharEncoding.DefaultEncoding.GetMaxByteCount(_sb.Length);
             byte* bytePtr = stackalloc byte[bytePtrLength];
+            ;
             _bytesLength = CharEncoding.DefaultEncoding.GetBytes(buffer, _sb.Length, bytePtr, bytePtrLength) + 1;
          
             int sum = 0;
@@ -140,7 +141,7 @@ namespace QuickFix.Fields
         /// <summary>
         /// returns tag=val
         /// </summary>
-        private void makeStringField()
+        private void buildStringField()
         {
             _stringField = null;
             makeStringVal();
@@ -161,7 +162,7 @@ namespace QuickFix.Fields
         public override StringBuilder appendStringFieldTo(StringBuilder builder)
         {
             if (_fieldChanged)
-                makeStringField();
+                buildStringField();
             builder.Append(_sb);
             return builder;
         }     
