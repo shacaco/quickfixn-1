@@ -1,0 +1,17 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    mini_portile2 (2.8.1)
+    nokogiri (1.13.10)
+      mini_portile2 (~> 2.8.0)
+      racc (~> 1.4)
+    racc (1.6.2)
+
+PLATFORMS
+  x64-mingw-ucrt
+
+DEPENDENCIES
+  nokogiri
+
+BUNDLED WITH
+   2.4.2

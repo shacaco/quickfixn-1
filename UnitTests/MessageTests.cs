@@ -39,11 +39,11 @@ namespace UnitTests
             StringField sf1 = Message.ExtractField(str1, ref pos);
             Assert.That(pos, Is.EqualTo(10));
             Assert.That(sf1.Tag, Is.EqualTo(8));
-            Assert.That(sf1.Obj, Is.EqualTo("FIX.4.2"));
+            Assert.That(sf1.ToString(), Is.EqualTo("FIX.4.2"));
             StringField sf2 = Message.ExtractField(str1, ref pos);
             Assert.That(pos, Is.EqualTo(15));
             Assert.That(sf2.Tag, Is.EqualTo(9));
-            Assert.That(sf2.Obj, Is.EqualTo("46"));
+            Assert.That(sf2.ToString(), Is.EqualTo("46"));
         }
 
         [Test]
@@ -403,8 +403,8 @@ namespace UnitTests
             string m1 = "8=FIX4.2\x01" + "9999=99999\x01";
             string m2 = "987=pants\x01xxxxxxxxxxxxxxxxxxxxxx";
 
-            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1));
-            Assert.AreEqual("pants", Message.ExtractBeginString(m2));
+            Assert.AreEqual("FIX4.2", Message.ExtractBeginString(m1).Obj);
+            Assert.AreEqual("pants", Message.ExtractBeginString(m2).Obj);
         }
 
         [Test]

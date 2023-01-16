@@ -32,9 +32,9 @@ namespace QuickFix
 
         #region MessageStore Members
 
-        public bool Set(int msgSeqNum, string msg)
+        public bool Set(int msgSeqNum, ReadOnlySpan<char> msg)
         {
-            Messages[msgSeqNum] = msg;
+            Messages[msgSeqNum] = msg.ToString();
             return true;
         }
 

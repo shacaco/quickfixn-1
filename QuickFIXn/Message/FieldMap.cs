@@ -12,7 +12,6 @@ namespace QuickFix
     /// </summary>
     public class FieldMap : IEnumerable<KeyValuePair<int, Fields.IField>>
     {
-        protected readonly StringBuilder _toStringBuilder = new StringBuilder(256);
         /// <summary>
         /// Default constructor
         /// </summary>
@@ -568,9 +567,9 @@ namespace QuickFix
                     total += field.getTotal();
             }
 
-            foreach (List<Group> groupList in _groups.Values)
+            foreach (var groupList in _groups)
             {
-                foreach (Group group in groupList)
+                foreach (Group group in groupList.Value)
                     total += group.CalculateTotal();
             }
             return total;
@@ -600,41 +599,40 @@ namespace QuickFix
                     total += field.getLength();
                 }
             }
-
-            foreach (List<Group> groupList in _groups.Values)
+            foreach (var groupList in _groups)
             {
-                foreach (Group group in groupList)
+                foreach (Group group in groupList.Value)
                     total += group.CalculateLength();
             }
 
             return total;
         }
 
-        public virtual string CalculateString(bool orderPostFieldOrder)
+        public virtual StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), FieldOrder ?? new int[0], orderPostFieldOrder);
+            var result = CalculateString(sb ?? new StringBuilder(1024), FieldOrder ?? Array.Empty<int>(), orderPostFieldOrder);
             return result;
         }
 
         private readonly HashSet<int> _groupCounterTags = new HashSet<int>();
-        public virtual string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFields)
+        public virtual StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFields)
         {
             _groupCounterTags.Clear();
-            if (_groups.Keys.Count > 0)
-                foreach (var key in _groups.Keys)
-                    _groupCounterTags.Add(key);
+            if (_groups.Count > 0)
+                foreach (var kvp in _groups)
+                    _groupCounterTags.Add(kvp.Key);
 
             for (int i = 0; i < preFields.Length; i++)
             {
                 var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    sb.Append(_fields[preField].toStringField()).Append(Message.CHAR_1);
+                    _fields[preField].AppendFieldAsStringTo(sb).Append(Message.SOH);
                     if (_groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
                         foreach (Group g in glist)
-                            sb.Append(g.CalculateString(true));
+                            g.CalculateString(true, sb);
                     }
                 }
             }
@@ -647,7 +645,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    sb.Append(field.Value.toStringField()).Append(Message.CHAR_1);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.SOH);
                 }
             }
             else
@@ -658,26 +656,26 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    sb.Append(field.Value.toStringField()).Append(Message.CHAR_1);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.SOH);
                 }
             }
 
-            foreach (int counterTag in _groups.Keys)
+            foreach (var counterTag in _groups)
             {
-                if (preFields.Contains(counterTag))
+                if (preFields.Contains(counterTag.Key))
                     continue; //already did this one
 
-                List<Group> groupList = _groups[counterTag];
+                List<Group> groupList = _groups[counterTag.Key];
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
-
-                sb.Append(_fields[counterTag].toStringField()).Append(Message.CHAR_1);
+           
+                _fields[counterTag.Key].AppendFieldAsStringTo(sb).Append(Message.SOH);
 
                 foreach (Group group in groupList)
-                    sb.Append(group.CalculateString(true));
+                    group.CalculateString(true, sb);
             }
 
-            return sb.ToString();
+            return sb;
         }
 
         /// <summary>

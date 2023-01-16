@@ -28,10 +28,10 @@ namespace QuickFix
         private bool _abortTask;
         private bool _disposed;
 
-        private ProducerConsumerBuffer<char[]> _buffer = new ProducerConsumerBuffer<char[]>(4096, true, true, () => new char[400]);
+        private readonly ProducerConsumerBuffer<WritePackage> _buffer = new ProducerConsumerBuffer<WritePackage>(4096, true, true, () => new WritePackage());
         private Thread _writeThread;
-        private readonly ConcurrentQueue<char[]> _messages = new ConcurrentQueue<char[]>();
-        private readonly ConcurrentQueue<char[]> _events = new ConcurrentQueue<char[]>();
+        private readonly ConcurrentQueue<WritePackage> _messages = new ConcurrentQueue<WritePackage>();
+        private readonly ConcurrentQueue<WritePackage> _events = new ConcurrentQueue<WritePackage>();
         private readonly AutoResetEvent _writeEvent = new AutoResetEvent(true);
 
         public FileLogAsync(string fileLogPath)
@@ -108,12 +108,12 @@ namespace QuickFix
             }
         }
 
-        public void OnIncoming(string msg)
+        public void OnIncoming(ReadOnlySpan<char> msg)
         {
             AddWriteOperation(_messages, msg);
         }
 
-        public void OnOutgoing(string msg)
+        public void OnOutgoing(ReadOnlySpan<char> msg)
         {
             AddWriteOperation(_messages, msg);
         }
@@ -123,25 +123,14 @@ namespace QuickFix
             AddWriteOperation(_events, msg);
         }
 
-        private void AddWriteOperation(ConcurrentQueue<char[]> dest, string msg)
+        private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg)
         {
-            var b = _buffer.Dequeue();
-            var timeStr = Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond).AsSpan();
-            int index = 0;
-            CopyToBuffer(ref b, timeStr, ref index);
-            CopyToBuffer(ref b, Colon, ref index);
-            CopyToBuffer(ref b, msg.AsSpan(), ref index);
-            Array.Clear(b, index, b.Length - index);
-            dest.Enqueue(b);
+            var package = _buffer.Dequeue();
+            package.Time = MyDateTime.PreciseDateTime.NowUTC;
+            msg.CopyTo(package.Buffer.AsSpan());
+            package.Length = msg.Length;
+            dest.Enqueue(package);
             _writeEvent.Set();
-        }
-
-        private static void CopyToBuffer(ref char[] buffer, ReadOnlySpan<char> toAdd, ref int index)
-        {
-            if (buffer.Length < index + toAdd.Length)
-                System.Array.Resize<char>(ref buffer, (index + toAdd.Length));
-            toAdd.CopyTo(buffer.AsSpan().Slice(index, toAdd.Length));
-            index += toAdd.Length;
         }
 
         private void Write()
@@ -154,18 +143,22 @@ namespace QuickFix
                     lock (sync_)
                     {
                         DisposedCheck();
-                        while (_messages.TryDequeue(out char[] msg))
+                        while (_messages.TryDequeue(out var package))
                         {
-                            var nullIndex = Array.IndexOf(msg, NullChar);
-                            messageLog_.WriteLine(msg, 0, nullIndex == -1 ? msg.Length : nullIndex);
-                            _buffer.Enqueue(msg);
+                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            messageLog_.Write(timeStr);
+                            messageLog_.Write(Colon);
+                            messageLog_.WriteLine(package.Buffer, 0, package.Length);
+                            _buffer.Enqueue(package);
                         }
 
-                        while (_events.TryDequeue(out char[] msg))
+                        while (_events.TryDequeue(out var package))
                         {
-                            var nullIndex = Array.IndexOf(msg, NullChar);
-                            eventLog_.WriteLine(msg, 0, nullIndex == -1 ? msg.Length : nullIndex);
-                            _buffer.Enqueue(msg);
+                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            eventLog_.Write(timeStr);
+                            eventLog_.Write(Colon);
+                            eventLog_.WriteLine(package.Buffer, 0, package.Length);
+                            _buffer.Enqueue(package);
                         }
                     }
                 }
@@ -174,6 +167,12 @@ namespace QuickFix
             { }
         }
 
+        class WritePackage
+        {
+            internal char[] Buffer { get; } = new char[1024];
+            internal int Length { get; set; }
+            internal DateTime Time { get; set; }
+        }
         #endregion
 
         #region IDisposable Members

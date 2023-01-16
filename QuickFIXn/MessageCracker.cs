@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using QuickFix.Fields;
 using System.Reflection;
 using System.Linq.Expressions;
 
@@ -13,7 +9,7 @@ namespace QuickFix
     /// Helper class for delegating message types for various FIX versions to
     /// type-safe OnMessage methods.
     /// </summary>
-    public abstract class MessageCracker
+    public abstract class MessageCracker : IMessageCracker
     {
         private Dictionary<Type, Action<Message, SessionID>> _callCache = new Dictionary<Type, Action<Message, SessionID>>();
 

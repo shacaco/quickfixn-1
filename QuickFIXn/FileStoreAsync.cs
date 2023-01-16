@@ -34,9 +34,9 @@ namespace QuickFix
         private System.IO.FileStream msgFile_;
         private System.IO.StreamWriter headerFile_;
         private System.IO.StreamWriter seqNumsWriter_;
-
+        private readonly byte[] _writeBuffer = new byte[1024];
         private MemoryStore cache_ = new MemoryStore();
-        System.Collections.Generic.Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
+        private Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
 
         private bool _abortTask;
 
@@ -195,8 +195,8 @@ namespace QuickFix
                         msgFile_.Seek(offsets_[i].index, System.IO.SeekOrigin.Begin);
                         byte[] msgBytes = new byte[offsets_[i].size];
                         msgFile_.Read(msgBytes, 0, msgBytes.Length);
-
-                        messages.Add(CharEncoding.DefaultEncoding.GetString(msgBytes));
+                        var data = CharEncoding.DefaultEncoding.GetString(msgBytes);
+                        messages.Add(data);
                     }
                 }
         }
@@ -207,9 +207,9 @@ namespace QuickFix
         /// <param name="msgSeqNum"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public bool Set(int msgSeqNum, string msg)
+        public bool Set(int msgSeqNum, ReadOnlySpan<char> msg)
         {
-            _setsToWrite.Enqueue((msg, msgSeqNum));
+            _setsToWrite.Enqueue((msg.ToString(), msgSeqNum));
             _autoResetEvent.Set();
             return true;
         }
@@ -269,18 +269,17 @@ namespace QuickFix
                         msgFile_.Seek(0, System.IO.SeekOrigin.End);
 
                         long offset = msgFile_.Position;
-                        byte[] msgBytes = CharEncoding.DefaultEncoding.GetBytes(msg);
-                        int size = msgBytes.Length;
+                        var length = CharEncoding.DefaultEncoding.GetBytes(msg, _writeBuffer);
 
                         _setBuffer.Clear();
-                        _setBuffer.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(size);
+                        _setBuffer.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
                         headerFile_.WriteLine(_setBuffer.ToString());
                         headerFile_.Flush();
 
-                        var offsetObject = new MsgDef(offset, size);
+                        var offsetObject = new MsgDef(offset, length);
                         offsets_[msgSeqNum] = offsetObject;
 
-                        msgFile_.Write(msgBytes, 0, size);
+                        msgFile_.Write(_writeBuffer, 0, length);
                         msgFile_.Flush();
                     }
 

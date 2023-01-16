@@ -39,5 +39,11 @@ namespace QuickFix
         /// <param name="groupCounterTag">the tag of the group's counter field</param>
         /// <returns>group, or null if the group can't be created</returns>
         Group Create(string beginString, string msgType, int groupCounterTag);
+
+        /// <summary>
+        /// Will return the message to its reusable messages buffer if one exists
+        /// </summary>
+        /// <param name="m"></param>
+        void ReturnIfReusable(QuickFix.Message m);
     }
 }

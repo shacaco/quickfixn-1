@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace QuickFix
 {
     /// <summary>
@@ -23,25 +25,25 @@ namespace QuickFix
         public void Clear()
         { }
 
-        public void OnIncoming(string msg)
+        public void OnIncoming(ReadOnlySpan<char> msg)
         {
             if (!logIncoming_)
                 return;
-            
+
             lock (sync_)
             {
-                System.Console.WriteLine("<incoming> " + msg);
+                System.Console.WriteLine("<incoming> " + msg.ToString());
             }
         }
 
-        public void OnOutgoing(string msg)
+        public void OnOutgoing(ReadOnlySpan<char> msg)
         {
             if (!logOutgoing_)
                 return;
 
             lock (sync_)
             {
-                System.Console.WriteLine("<outgoing> " + msg);
+                System.Console.WriteLine("<outgoing> " + msg.ToString());
             }
         }
 

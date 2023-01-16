@@ -9,7 +9,7 @@ namespace QuickFix
     /// </summary>
     public class Parser
     {
-        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new ProducerConsumerBuffer<byte[]>(16, true, true, () => new byte[1024]);
+        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new(4, true, true, () => new byte[1024]);
         private static readonly byte[] Message9TagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "9=");
         private static readonly byte[] MessageChecksumTagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "10=");
         private static readonly byte[] MessageBeginStringTag = CharEncoding.DefaultEncoding.GetBytes("8=");
@@ -17,23 +17,24 @@ namespace QuickFix
 
         private byte[] buffer_;
         private int usedBufferLength;
+        private readonly char[] _currentMsg = new char[1024];
 
         public Parser()
         {
             buffer_ = _producerConsumerBuffer.Dequeue();
         }
 
-        private void DoAddToStream(byte[] data, int bytesAdded)
+        private void DoAddToStream(ReadOnlySpan<byte> data, int bytesAdded)
         {
             if (buffer_.Length < usedBufferLength + bytesAdded)
                 System.Array.Resize<byte>(ref buffer_, (usedBufferLength + bytesAdded));
-            System.Buffer.BlockCopy(data, 0, buffer_, usedBufferLength, bytesAdded);
+            data.CopyTo(buffer_.AsSpan().Slice(usedBufferLength));
             usedBufferLength += bytesAdded;
         }
 
         public void AddToStream(ReadOnlySpan<byte> data)
         {
-            DoAddToStream(data.ToArray(), data.Length);
+            DoAddToStream(data, data.Length);
         }
 
         public void AddToStream(byte[] data)
@@ -41,9 +42,9 @@ namespace QuickFix
             DoAddToStream(data, data.Length);
         }
 
-        public bool ReadFixMessage(out string msg)
+        public bool ReadFixMessage(out ReadOnlySpan<char> msg)
         {
-            msg = "";
+            msg = null;
 
             if (buffer_.Length < 2)//too short
                 return false;
@@ -79,7 +80,8 @@ namespace QuickFix
                     return false;//no separator found
                 totalMsgLength += index + 1;
 
-                msg = CharEncoding.DefaultEncoding.GetString(buffer_, msgStartPos, totalMsgLength);//cut message to size
+                var totalChars = CharEncoding.DefaultEncoding.GetChars(buffer_, msgStartPos, totalMsgLength, _currentMsg, 0);//cut message to size
+                msg = _currentMsg.AsSpan(0, totalChars);
                 buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }
@@ -131,12 +133,13 @@ namespace QuickFix
             return true;
         }
 
-        private byte[] RemoveAndSwitch(byte[] array, int count)
+        private byte[] RemoveAndSwitch(byte[] array, int offset)
         {
             byte[] returnByte = _producerConsumerBuffer.Dequeue();
-            System.Buffer.BlockCopy(array, count, returnByte, 0, array.Length - count);
-            usedBufferLength -= count;
-            Array.Clear(array, 0, array.Length);
+            var copyCount = Math.Max(0, usedBufferLength - offset);
+            System.Buffer.BlockCopy(array, offset, returnByte, 0, copyCount);
+            Array.Clear(array, 0, usedBufferLength);
+            usedBufferLength = copyCount;
             _producerConsumerBuffer.Enqueue(array);
             return returnByte;
         }

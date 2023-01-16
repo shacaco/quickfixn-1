@@ -1,4 +1,6 @@
-﻿namespace QuickFix.Fields
+﻿using System.Text;
+
+namespace QuickFix.Fields
 {
     /// <summary>
     /// Interface for all field classes
@@ -9,6 +11,7 @@
         public abstract int Tag { get; set; }
         #endregion
 
+        public abstract StringBuilder AppendFieldAsStringTo(StringBuilder builder);
         /// <summary>
         /// returns full fix string: tag=val
         /// </summary>

@@ -28,6 +28,8 @@ namespace QuickFix
 #{gen_method_create(messages,fixver)}
 
 #{gen_method_group(messages,fixver)}
+
+#{gen_method_return(messages,fixver)}
         }
     }
 }
@@ -74,6 +76,14 @@ return <<HERE
 HERE
   end
 
+
+  def self.gen_method_return(messages,fixver)
+    return <<HERE
+            public void ReturnIfReusable(QuickFix.Message m)
+            {
+            }
+HERE
+  end
 
   def self.gen_method_create_cases(messages,fixver)
     indent = " "*4*5

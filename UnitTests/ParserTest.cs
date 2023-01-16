@@ -55,17 +55,14 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream((CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2 + fixMsg3)));
 
-            string readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
-            Assert.AreEqual(fixMsg1, readFixMsg1);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
+            Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
 
-            string readFixMsg2;
-            Assert.True(parser.ReadFixMessage(out readFixMsg2));
-            Assert.AreEqual(fixMsg2, readFixMsg2);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg2));
+            Assert.AreEqual(fixMsg2, readFixMsg2.ToString());
 
-            string readFixMsg3;
-            Assert.True(parser.ReadFixMessage(out readFixMsg3));
-            Assert.AreEqual(fixMsg3, readFixMsg3);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg3));
+            Assert.AreEqual(fixMsg3, readFixMsg3.ToString());
         }
 
         [Test]
@@ -81,8 +78,7 @@ namespace UnitTests
             {
                 parser.AddToStream(combined);
 
-                string readFixMsg1;
-                parser.ReadFixMessage(out readFixMsg1);
+                parser.ReadFixMessage(out var readFixMsg1);
             }
             TestContext.WriteLine($"time={sw.Elapsed}");
         }
@@ -96,12 +92,11 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg1));
 
-            string readPartFixMsg;
-            Assert.False(parser.ReadFixMessage(out readPartFixMsg));
+            Assert.False(parser.ReadFixMessage(out var readPartFixMsg));
 
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(partFixMsg2));
             Assert.True(parser.ReadFixMessage(out readPartFixMsg));
-            Assert.AreEqual(partFixMsg1 + partFixMsg2, readPartFixMsg);
+            Assert.AreEqual(partFixMsg1 + partFixMsg2, readPartFixMsg.ToString());
         }
 
         [Test]
@@ -112,11 +107,11 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg));
 
-            string readFixMsg;
-            Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out readFixMsg); });
+
+            Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out var readFixMsg); });
             
             // nothing thrown now because the previous call removes bad data from buffer:
-            Assert.DoesNotThrow(delegate { parser.ReadFixMessage(out readFixMsg); });
+            Assert.DoesNotThrow(delegate { parser.ReadFixMessage(out var readFixMsg); });
         }
 
         [Test]
@@ -138,13 +133,11 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1 + fixMsg2));
 
-            string readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
-            Assert.AreEqual(fixMsg1, readFixMsg1);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
+            Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
 
-            string readFixMsg2;
-            Assert.True(parser.ReadFixMessage(out readFixMsg2));
-            Assert.AreEqual(fixMsg2, readFixMsg2);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg2));
+            Assert.AreEqual(fixMsg2, readFixMsg2.ToString());
         }
 
         [Test] // Issue #282 investigation
@@ -156,9 +149,8 @@ namespace UnitTests
             Parser parser = new Parser();
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(fixMsg1));
 
-            string readFixMsg1;
-            Assert.True(parser.ReadFixMessage(out readFixMsg1));
-            Assert.AreEqual(fixMsg1, readFixMsg1);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg1));
+            Assert.AreEqual(fixMsg1, readFixMsg1.ToString());
         }
     }
 }

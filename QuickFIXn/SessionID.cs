@@ -141,8 +141,7 @@ namespace QuickFix
         private static StringField GetStringField(int tag, string value)
         {
             var field = StringField.Factory.GetNext();
-            field.Tag = tag;
-            field.setValue(value);
+            field.Set(tag, value);
             return field;
         }
 

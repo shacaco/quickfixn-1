@@ -1,4 +1,5 @@
-﻿using QuickFix.Fields;
+using System;
+using QuickFix.Fields;
 using System.Linq;
 
 namespace QuickFix
@@ -7,26 +8,22 @@ namespace QuickFix
     {
         private readonly DataDictionary.DataDictionary _sessionDD;
         private readonly DataDictionary.DataDictionary _appDD;
-        private readonly IMessageFactory _msgFactory;
         private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
-
-        private StringField _msgType;
-        private string _beginString;
-        private string _msgStr;
+        private readonly IMessageFactory _msgFactory;
+        private readonly StringField[] reusableFields = new StringField[100].Select(i => new StringField(-1)).ToArray();
+        private readonly Message _reusableMessage = new Message();
         private Message _message;
 
-        public string OriginalString => _msgStr;
-        public StringField MsgType => _msgType;
+        public StringField MsgType { get; private set; } = new StringField(-1);
 
         /// <summary>
         /// The BeginString from the raw FIX message
         /// </summary>
-        public string BeginString { get { return _beginString; } }
+        public StringField BeginString { get; private set; } = new StringField(-1);
 
         internal MessageBuilder(string defaultApplVerId,
             DataDictionary.DataDictionary sessionDD,
-            DataDictionary.DataDictionary appDD,
-            IMessageFactory msgFactory)
+            DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             _defaultApplVerId = new ApplVerID(defaultApplVerId);
             _sessionDD = sessionDD;
@@ -34,37 +31,18 @@ namespace QuickFix
             _msgFactory = msgFactory;
         }
 
-        private StringField _reusableBeginStringField = new StringField(-1);
-        private StringField _reusableMsgTypeField = new StringField(-1);
-        private StringField[] reusableFields = new StringField[100].Select(i => new StringField(-1)).ToArray();
-        internal Message Build(bool validateLengthAndChecksum)
+        internal Message Build(ReadOnlySpan<char> msg, bool validateLengthAndChecksum)
         {
-            _message = _msgFactory.Create(_beginString, _defaultApplVerId, _msgType.Obj);
-            _message.FromString(_msgStr, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
+            MsgType = Message.IdentifyType(msg, MsgType);
+            BeginString = Message.ExtractBeginString(msg, BeginString);
+            _message = _reusableMessage.ClearAndInitialize(BeginString, MsgType);
+            _message.FromString(msg, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory, reusableFields);
             return _message;
-        }
-
-        internal void SetData(string msgStr)
-        {
-            _msgStr = msgStr;
-            _msgType = Message.IdentifyType(_msgStr, _reusableMsgTypeField);
-            _beginString = Message.ExtractBeginString(_msgStr, _reusableBeginStringField);
         }
 
         internal Message RejectableMessage()
         {
-            if (_message != null)
-                return _message;
-
-            Message message = _msgFactory.Create(_beginString, _msgType.Obj);
-            message.FromString(
-                _msgStr,
-                false,
-                _sessionDD,
-                _appDD,
-                _msgFactory,
-                true);
-            return message;
+            return _message;
         }
     }
 }

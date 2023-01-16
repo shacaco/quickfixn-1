@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using QuickFix.Fields;
-using System.Text.RegularExpressions;
 using System.Text.Json;
 
 namespace QuickFix
@@ -20,13 +19,13 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString(bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(_toStringBuilder.Clear(), HEADER_FIELD_ORDER, orderPostFieldOrder);
+            var result = CalculateString(sb ?? new StringBuilder(64), HEADER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
             return base.CalculateString(sb, HEADER_FIELD_ORDER, orderPostFieldOrder);
         }
@@ -44,13 +43,13 @@ namespace QuickFix
             : base(src)
         { }
 
-        public override string CalculateString(bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = base.CalculateString(_toStringBuilder.Clear(), TRAILER_FIELD_ORDER, orderPostFieldOrder);
+            var result = base.CalculateString(sb ?? new StringBuilder(64), TRAILER_FIELD_ORDER, orderPostFieldOrder);
             return result;
         }
 
-        public override string CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
+        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
         {
             return base.CalculateString(sb, TRAILER_FIELD_ORDER, orderPostFieldOrder);
         }
@@ -61,10 +60,11 @@ namespace QuickFix
     /// </summary>
     public class Message : FieldMap
     {
-        private static readonly string MSG_TYPE_STRING = CHAR_1 + "35=([^" + CHAR_1 + "]*)" + CHAR_1;
-        public const char CHAR_1 = (char)1;
+        private static readonly string MSG_TYPE_STRING = $"{SOH}35=";
         public const string SOH = "\u0001";
+        public const string Equal = "=";
 
+        protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
         private int field_ = 0;
         private bool validStructure_;
 
@@ -78,7 +78,7 @@ namespace QuickFix
 
         #region Constructors
 
-        public Message() 
+        public Message()
         {
             this.Header = new Header();
             this.Trailer = new Trailer();
@@ -91,7 +91,7 @@ namespace QuickFix
 
         public Message(string msgstr, bool validate)
             : this(msgstr, null, null, validate)
-        {  }
+        { }
 
         public Message(string msgstr, DataDictionary.DataDictionary dataDictionary, bool validate)
             : this()
@@ -105,7 +105,7 @@ namespace QuickFix
         {
             this.ApplicationDataDictionary = appDD;
             FromStringHeader(msgstr);
-            if(IsAdmin())
+            if (IsAdmin())
                 FromString(msgstr, validate, sessionDataDictionary, sessionDataDictionary, null);
             else
                 FromString(msgstr, validate, sessionDataDictionary, appDD, null);
@@ -117,7 +117,7 @@ namespace QuickFix
             this.Header = new Header(src.Header);
             this.Trailer = new Trailer(src.Trailer);
             this.validStructure_ = src.validStructure_;
-            this.field_= src.field_;
+            this.field_ = src.field_;
         }
 
         #endregion
@@ -126,7 +126,7 @@ namespace QuickFix
 
         public static bool IsAdminMsgType(string msgType)
         {
-            return msgType.Length == 1 && "0A12345n".IndexOf(msgType) != -1;
+            return msgType.Length == 1 && "0A12345n".IndexOf(msgType, StringComparison.Ordinal) != -1;
         }
 
         /// <summary>
@@ -136,76 +136,50 @@ namespace QuickFix
         /// <param name="reusableField"></param>
         /// <returns>the message type as a MsgType object</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static StringField IdentifyType(string fixstring, StringField reusableField = null)
+        public static StringField IdentifyType(ReadOnlySpan<char> fixstring, StringField reusableField = null)
         {
             var f = reusableField ?? StringField.Factory.GetNext();
-            f.Tag = MsgType.TAG;
-            f.setValue(GetMsgType(fixstring));
+            f.Set(MsgType.TAG, GetMsgType(fixstring));
             return f;
         }
 
-        public static StringField ExtractField(string msgstr, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
+        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
         {
             try
             {
-                int tagend = msgstr.IndexOf('=', pos);
-                int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
-                pos = tagend + 1;
-                int fieldvalend = msgstr.IndexOf(CHAR_1, pos);
-                field = field ?? StringField.Factory.GetNext();
-                field.Tag = tag;
-                field.Obj = msgstr.Substring(pos, fieldvalend - pos);
+                int tagLength = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal);
+                int tag = int.Parse(msg.Slice(pos, tagLength));
+                pos += tagLength + 1;
+                int fieldValueLength = msg.Slice(pos).IndexOf(SOH, StringComparison.Ordinal);
+                field ??= StringField.Factory.GetNext();    
+                field.Set(tag, msg.Slice(pos, fieldValueLength).ToString());
 
-                /*
-                 TODO data dict stuff
-                if (((null != sessionDD) && sessionDD.IsDataField(field.Tag)) || ((null != appDD) && appDD.IsDataField(field.Tag)))
-                {
-                    string fieldLength = "";
-                    // Assume length field is 1 less
-                    int lenField = field.Tag - 1;
-                    // Special case for Signature which violates above assumption
-                    if (Tags.Signature.Equals(field.Tag))
-                        lenField = Tags.SignatureLength;
-
-                    if ((null != group) && group.isSetField(lenField))
-                    {
-                        fieldLength = group.GetField(lenField);
-                        soh = equalSign + 1 + atol(fieldLength.c_str());
-                    }
-                    else if (isSetField(lenField))
-                    {
-                        fieldLength = getField(lenField);
-                        soh = equalSign + 1 + atol(fieldLength.c_str());
-                    }
-                }
-                */
-
-                pos = fieldvalend + 1;
+                pos += fieldValueLength + 1;
                 return field;
             }
             catch (System.ArgumentOutOfRangeException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
             catch (System.OverflowException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
             catch (System.FormatException e)
             {
-                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msgstr + ")", e);
+                throw new MessageParseError("Error at position (" + pos + ") while parsing msg (" + msg.ToString() + ")", e);
             }
         }
 
-        public static StringField ExtractField(string msgstr, ref int pos)
+        public static StringField ExtractField(ReadOnlySpan<char> msgstr, ref int pos)
         {
             return ExtractField(msgstr, ref pos, null, null);
         }
 
-        public static string ExtractBeginString(string msgstr, StringField reusableField = null)
+        public static StringField ExtractBeginString(ReadOnlySpan<char> msgstr, StringField reusableField = null)
         {
             int i = 0;
-            return ExtractField(msgstr, ref i, null, null, reusableField).Obj;
+            return ExtractField(msgstr, ref i, null, null, reusableField);
         }
 
         public static bool IsHeaderField(int tag)
@@ -315,16 +289,31 @@ namespace QuickFix
         /// <summary>
         /// Parse the message type (tag 35) from a FIX string
         /// </summary>
-        /// <param name="fixstring">the FIX string to parse</param>
+        /// <param name="msg">the FIX string to parse</param>
         /// <returns>message type</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static string GetMsgType(string fixstring)
+        public static string GetMsgType(ReadOnlySpan<char> msg)
         {
-            Match match = Regex.Match(fixstring, MSG_TYPE_STRING);
-            if (match.Success)
-                return match.Groups[1].Value;
+            try
+            {
+                var msgTypeTagIndex = msg.IndexOf(MSG_TYPE_STRING, StringComparison.Ordinal);
+                if (msgTypeTagIndex < 0)
+                    throw new Exception();
 
-            throw new MessageParseError("missing or malformed tag 35 in msg: " + fixstring);
+                var objStartIndex = msgTypeTagIndex + MSG_TYPE_STRING.Length;
+                var nextSOHWithin = msg.Slice(objStartIndex).IndexOf(SOH, StringComparison.Ordinal);
+                if (nextSOHWithin < 0)
+                    throw new Exception();
+
+                var nextEquals = msg.Slice(objStartIndex).IndexOf(Equal, StringComparison.Ordinal);
+                if (nextEquals > 0 && nextEquals < nextSOHWithin)
+                    throw new Exception();
+                return msg.Slice(objStartIndex, nextSOHWithin).ToString();
+            }
+            catch (Exception)
+            {
+                throw new MessageParseError("missing or malformed tag 35 in msg: " + msg.ToString());
+            }
         }
 
         public static ApplVerID GetApplVerID(string beginString)
@@ -354,20 +343,20 @@ namespace QuickFix
 
         #endregion
 
-        public bool FromStringHeader(string msgstr)
+        public bool FromStringHeader(ReadOnlySpan<char> msg)
         {
             Clear();
-            
+
             int pos = 0;
             int count = 0;
-            while(pos < msgstr.Length)
+            while (pos < msg.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos);
-                
-                if((count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
+                StringField f = ExtractField(msg, ref pos);
+
+                if ((count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     return false;
-                
-                if(IsHeaderField(f.Tag))
+
+                if (IsHeaderField(f.Tag))
                     this.Header.SetField(f, false);
                 else
                     break;
@@ -378,30 +367,30 @@ namespace QuickFix
         /// <summary>
         /// Creates a Message from a FIX string
         /// </summary>
-        /// <param name="msgstr"></param>
+        /// <param name="msg"></param>
         /// <param name="validate"></param>
         /// <param name="sessionDD"></param>
         /// <param name="appDD"></param>
-        public void FromString(string msgstr, bool validate, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
+        public void FromString(ReadOnlySpan<char> msg, bool validate, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
         {
             this.ApplicationDataDictionary = appDD;
-            FromString(msgstr, validate, sessionDD, appDD, null);
+            FromString(msg, validate, sessionDD, appDD, null);
         }
 
         /// <summary>
         /// Create a Message from a FIX string
         /// </summary>
-        /// <param name="msgstr"></param>
+        /// <param name="msg"></param>
         /// <param name="validate"></param>
         /// <param name="sessionDD"></param>
         /// <param name="appDD"></param>
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
         /// <param name="reusableFields"></param>
-        public void FromString(string msgstr, bool validate,
+        public void FromString(ReadOnlySpan<char> msg, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, StringField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
-            FromString(msgstr, validate, sessionDD, appDD, msgFactory, false, reusableFields);
+            FromString(msg, validate, sessionDD, appDD, msgFactory, false, reusableFields);
         }
 
         /// <summary>
@@ -416,24 +405,23 @@ namespace QuickFix
         ///   Intended for callers that only need rejection-related information from the header.
         ///   </param>
         /// <param name="reusableFields"></param>
-        public void FromString(string msgstr, bool validate,
+        public void FromString(ReadOnlySpan<char> msgstr, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
             bool ignoreBody, StringField[] reusableFields = null)
         {
             this.ApplicationDataDictionary = appDD;
             Clear();
 
-            string msgType = "";
             bool expectingHeader = true;
             bool expectingBody = true;
             int count = 0;
             int pos = 0;
-	        DataDictionary.IFieldMapSpec msgMap = null;
+            DataDictionary.IFieldMapSpec msgMap = null;
             int reusableFieldsIndex = 0;
             while (pos < msgstr.Length)
             {
                 StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
-                
+
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
 
@@ -448,12 +436,11 @@ namespace QuickFix
 
                     if (Tags.MsgType.Equals(f.Tag))
                     {
-                        msgType = f.Obj;
                         if (appDD != null)
                         {
-                            msgMap = appDD.GetMapForMessage(msgType);
+                            msgMap = appDD.GetMapForMessage(f.ToString());
                         }
-		            }
+                    }
 
                     if (!this.Header.SetField(f, false))
                         this.Header.RepeatedTags.Add(f);
@@ -475,7 +462,7 @@ namespace QuickFix
                         pos = SetGroup(f, msgstr, pos, this.Trailer, sessionDD.Trailer.GetGroup(f.Tag), sessionDD, appDD, msgFactory);
                     }
                 }
-                else if (ignoreBody==false)
+                else if (ignoreBody == false)
                 {
                     if (!expectingBody)
                     {
@@ -490,8 +477,8 @@ namespace QuickFix
                         this.RepeatedTags.Add(f);
                     }
 
-                    
-                    if((null != msgMap) && (msgMap.IsGroup(f.Tag)))
+
+                    if ((null != msgMap) && (msgMap.IsGroup(f.Tag)))
                     {
                         pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), sessionDD, appDD, msgFactory);
                     }
@@ -521,10 +508,10 @@ namespace QuickFix
             using (JsonDocument document = JsonDocument.Parse(json))
             {
                 string beginString = document.RootElement.GetProperty("Header").GetProperty("BeginString").GetString();
-                string msgType     = document.RootElement.GetProperty("Header").GetProperty("MsgType").GetString();
+                string msgType = document.RootElement.GetProperty("Header").GetProperty("MsgType").GetString();
                 DataDictionary.IFieldMapSpec msgMap = appDD.GetMapForMessage(msgType);
-                FromJson(document.RootElement.GetProperty("Header"),  beginString, msgType, msgMap, msgFactory, sessionDD, this.Header);
-                FromJson(document.RootElement.GetProperty("Body"),    beginString, msgType, msgMap, msgFactory, appDD,     this);
+                FromJson(document.RootElement.GetProperty("Header"), beginString, msgType, msgMap, msgFactory, sessionDD, this.Header);
+                FromJson(document.RootElement.GetProperty("Body"), beginString, msgType, msgMap, msgFactory, appDD, this);
                 FromJson(document.RootElement.GetProperty("Trailer"), beginString, msgType, msgMap, msgFactory, sessionDD, this.Trailer);
             }
 
@@ -583,17 +570,17 @@ namespace QuickFix
         /// <param name="msgFactory">if null, then this method will use the generic Group class constructor</param>
         /// <returns></returns>
         protected int SetGroup(
-            StringField grpNoFld, string msgstr, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
+            StringField grpNoFld, ReadOnlySpan<char> msg, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
             DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             int grpEntryDelimiterTag = groupDD.Delim;
             int grpPos = pos;
             Group grp = null; // the group entry being constructed
 
-            while (pos < msgstr.Length)
+            while (pos < msg.Length)
             {
                 grpPos = pos;
-                StringField f = ExtractField(msgstr, ref pos, sessionDataDictionary, appDD);
+                StringField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD);
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -607,7 +594,7 @@ namespace QuickFix
 
                     // Create a new group!
                     if (msgFactory != null)
-                        grp = msgFactory.Create(Message.ExtractBeginString(msgstr), Message.GetMsgType(msgstr), grpNoFld.Tag);
+                        grp = msgFactory.Create(Message.ExtractBeginString(msg).Obj, Message.GetMsgType(msg), grpNoFld.Tag);
 
                     //If above failed (shouldn't ever happen), just use a generic Group.
                     if (grp == null)
@@ -622,7 +609,7 @@ namespace QuickFix
                     }
                     return grpPos;
                 }
-                else if(groupDD.IsField(f.Tag) && grp != null && grp.IsSetField(f.Tag))
+                else if (groupDD.IsField(f.Tag) && grp != null && grp.IsSetField(f.Tag))
                 {
                     // Tag is appearing for the second time within a group element.
                     // Presumably the sender didn't set the delimiter (or their DD has a different delimiter).
@@ -637,13 +624,13 @@ namespace QuickFix
 
                 // f is just a field in our group entry.  Add it and iterate again.
                 grp.SetField(f);
-                if(groupDD.IsGroup(f.Tag))
+                if (groupDD.IsGroup(f.Tag))
                 {
                     // f is a counter for a nested group.  Recurse!
-                    pos = SetGroup(f, msgstr, pos, grp, groupDD.GetGroupSpec(f.Tag), sessionDataDictionary, appDD, msgFactory);
+                    pos = SetGroup(f, msg, pos, grp, groupDD.GetGroupSpec(f.Tag), sessionDataDictionary, appDD, msgFactory);
                 }
             }
-            
+
             return grpPos;
         }
 
@@ -767,31 +754,31 @@ namespace QuickFix
             this.Header.RemoveField(Tags.DeliverToCompID);
             this.Header.RemoveField(Tags.DeliverToSubID);
 
-            if(header.IsSetField(Tags.OnBehalfOfCompID))
+            if (header.IsSetField(Tags.OnBehalfOfCompID))
             {
                 string onBehalfOfCompID = header.GetString(Tags.OnBehalfOfCompID);
-                if(onBehalfOfCompID.Length > 0)
+                if (onBehalfOfCompID.Length > 0)
                     this.Header.SetField(new DeliverToCompID(onBehalfOfCompID));
             }
 
-            if(header.IsSetField(Tags.OnBehalfOfSubID))
+            if (header.IsSetField(Tags.OnBehalfOfSubID))
             {
-                string onBehalfOfSubID = header.GetString(  Tags.OnBehalfOfSubID);
-                if(onBehalfOfSubID.Length > 0)
+                string onBehalfOfSubID = header.GetString(Tags.OnBehalfOfSubID);
+                if (onBehalfOfSubID.Length > 0)
                     this.Header.SetField(new DeliverToSubID(onBehalfOfSubID));
             }
 
-            if(header.IsSetField(Tags.DeliverToCompID))
+            if (header.IsSetField(Tags.DeliverToCompID))
             {
                 string deliverToCompID = header.GetString(Tags.DeliverToCompID);
-                if(deliverToCompID.Length > 0)
+                if (deliverToCompID.Length > 0)
                     this.Header.SetField(new OnBehalfOfCompID(deliverToCompID));
             }
 
-            if(header.IsSetField(Tags.DeliverToSubID))
+            if (header.IsSetField(Tags.DeliverToSubID))
             {
                 string deliverToSubID = header.GetString(Tags.DeliverToSubID);
-                if(deliverToSubID.Length > 0)
+                if (deliverToSubID.Length > 0)
                     this.Header.SetField(new OnBehalfOfSubID(deliverToSubID));
             }
         }
@@ -863,17 +850,23 @@ namespace QuickFix
             this.Trailer.Clear();
         }
 
-        public void ClearAndInitialize()
+        public Message ClearAndInitialize()
+        {
+            var bs = StringField.Factory.GetNext().Set(Tags.BeginString, Header.GetString(Tags.BeginString));
+            var mt = StringField.Factory.GetNext().Set(Tags.MsgType, Header.GetString(Tags.MsgType));
+            return ClearAndInitialize(bs, mt);
+        }
+
+        internal Message ClearAndInitialize(IField beginString, IField msgType)
         {
             field_ = 0;
-            var bs = Header.GetString(Tags.BeginString);
-            var mt = Header.GetString(Tags.MsgType);
             this.Header.Clear();
-            this.Header.SetField(new BeginString(bs));
-            this.Header.SetField(new QuickFix.Fields.MsgType(mt));
+            this.Header.SetField(beginString);
+            this.Header.SetField(msgType);
             base.Clear();
             this.Trailer.Clear();
             validStructure_ = true;
+            return this;
         }
 
         private Object lock_ToString = new Object();
@@ -882,14 +875,37 @@ namespace QuickFix
             return ToString(false);
         }
 
+        public int ToCharArray(bool orderBodyPostFieldOrder, char[] chars)
+        {
+            lock (lock_ToString)
+            {
+                var b = ToStringBuilder(orderBodyPostFieldOrder);
+                b.CopyTo(0, chars, b.Length);
+                return b.Length;
+            }
+        }
+
         public string ToString(bool orderBodyPostFieldOrder)
         {
             lock (lock_ToString)
             {
-                this.Header.SetField(new BodyLength(BodyLength()), true);
-                this.Trailer.SetField(new CheckSum(Fields.Converters.CheckSumConverter.Convert(CheckSum())), true);
+               return ToStringBuilder(orderBodyPostFieldOrder).ToString();
+            }
+        }
 
-                return this.Header.CalculateString(orderBodyPostFieldOrder) + CalculateString(orderBodyPostFieldOrder) + this.Trailer.CalculateString(orderBodyPostFieldOrder);
+        public StringBuilder ToStringBuilder(bool orderBodyPostFieldOrder)
+        {
+            lock (lock_ToString)
+            {
+                var bl = IntField.Factory.GetNext().Set(Tags.BodyLength, BodyLength());
+                this.Header.SetField(bl, true);
+                var cs = StringField.Factory.GetNext().Set(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
+                this.Trailer.SetField(cs, true);
+                _toStringBuilder.Clear();
+                this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                this.Trailer.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                return _toStringBuilder;
             }
         }
 
@@ -904,16 +920,16 @@ namespace QuickFix
             string name = string.Empty;
 
             // fields
-            foreach (var f in fields.OrderBy(i=>i.Key))
+            foreach (var f in fields.OrderBy(i => i.Key))
             {
-               s.Append("<field ");
-               if ((dd != null) && ( dd.FieldsByTag.ContainsKey(f.Key)))
-               {
-                   s.Append("name=\"" + dd.FieldsByTag[f.Key].Name + "\" ");
-               }
-               s.Append("number=\"" + f.Key.ToString() + "\">");
-               s.Append("<![CDATA[" + f.Value.ToString() + "]]>");
-               s.Append("</field>");
+                s.Append("<field ");
+                if ((dd != null) && (dd.FieldsByTag.ContainsKey(f.Key)))
+                {
+                    s.Append("name=\"" + dd.FieldsByTag[f.Key].Name + "\" ");
+                }
+                s.Append("number=\"" + f.Key.ToString() + "\">");
+                s.Append("<![CDATA[" + f.Value.ToString() + "]]>");
+                s.Append("</field>");
             }
             // now groups
             List<int> groupTags = fields.GetGroupTags();
@@ -922,7 +938,7 @@ namespace QuickFix
                 for (int counter = 1; counter <= fields.GroupCount(groupTag); counter++)
                 {
                     s.Append("<group>");
-                    s.Append(FieldMapToXML(dd, fields.GetGroup(counter, groupTag), space+1));
+                    s.Append(FieldMapToXML(dd, fields.GetGroup(counter, groupTag), space + 1));
                     s.Append("</group>");
                 }
             }
@@ -953,7 +969,7 @@ namespace QuickFix
                     continue; // Groups will be handled below
                 }
 
-                if ((dd != null) && ( dd.FieldsByTag.ContainsKey(field.Value.Tag)))
+                if ((dd != null) && (dd.FieldsByTag.ContainsKey(field.Value.Tag)))
                 {
                     sb.Append("\"" + dd.FieldsByTag[field.Value.Tag].Name + "\":");
                     if (humanReadableValues)
@@ -978,10 +994,10 @@ namespace QuickFix
             }
 
             // Group Fields
-            foreach(Fields.IField numInGroupField in numInGroupFieldList)
+            foreach (Fields.IField numInGroupField in numInGroupFieldList)
             {
                 // The name of the NumInGroup field is the key of the JSON list containing the Group items
-                if ((dd != null) && ( dd.FieldsByTag.ContainsKey(numInGroupField.Tag)))
+                if ((dd != null) && (dd.FieldsByTag.ContainsKey(numInGroupField.Tag)))
                     sb.Append("\"" + dd.FieldsByTag[numInGroupField.Tag].Name + "\":[");
                 else
                     sb.Append("\"" + numInGroupField.Tag.ToString() + "\":[");
@@ -1074,8 +1090,8 @@ namespace QuickFix
         public string ToJSON(DataDictionary.DataDictionary dd, bool humanReadableValues)
         {
             StringBuilder sb = new StringBuilder().Append("{").Append("\"Header\":{");
-            FieldMapToJSON(sb, dd, Header,  humanReadableValues).Append("},\"Body\":{");
-            FieldMapToJSON(sb, dd, this,    humanReadableValues).Append("},\"Trailer\":{");
+            FieldMapToJSON(sb, dd, Header, humanReadableValues).Append("},\"Body\":{");
+            FieldMapToJSON(sb, dd, this, humanReadableValues).Append("},\"Trailer\":{");
             FieldMapToJSON(sb, dd, Trailer, humanReadableValues).Append("}}");
             return sb.ToString();
         }

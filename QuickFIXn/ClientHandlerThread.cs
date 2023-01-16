@@ -126,7 +126,7 @@ namespace QuickFix
 
         #region Responder Members
 
-        public bool Send(string data)
+        public bool Send(ReadOnlySpan<char> data)
         {
             return socketReader_.Send(data) > 0;
         }

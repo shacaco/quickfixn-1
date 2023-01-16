@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace QuickFix.Fields
 {
@@ -8,16 +9,18 @@ namespace QuickFix.Fields
     /// <typeparam name="T">Internal storage type</typeparam>
     public abstract class FieldBase<T> : IField
     {
+        private readonly StringBuilder _sb = new StringBuilder(64);
+
         /// <summary>
         /// Constructs a new field with the specified tag and value
         /// </summary>
         /// <param name="tag">the FIX tag number</param>
         /// <param name="obj">the value of the field</param>
-        public FieldBase(int tag, T obj)
+        protected FieldBase(int tag, T obj)
         {
             _tag = tag;
             _obj = obj;
-            _changed = true;
+            _valChanged = _fieldChanged = true;
         }
 
         #region Properties
@@ -27,7 +30,7 @@ namespace QuickFix.Fields
             set
             {
                 _obj = value;
-                _changed = true;
+                OnDataChanged();
             }
         }
 
@@ -40,19 +43,26 @@ namespace QuickFix.Fields
             set
             {
                 _tag = value;
-                _changed = true;
+                OnDataChanged();
             }
         }
         #endregion
+
+        public FieldBase<T> Set(int tag, T obj)
+        {
+            Tag = tag;
+            Obj = obj;
+            return this;
+        }
 
         /// <summary>
         /// returns full fix string (e.g. "tag=val")
         /// </summary>
         public override string toStringField()
         {
-            if (_changed.Equals(true))
-                makeStringFields();
-            return _stringField;
+            if (_fieldChanged)
+                buildStringField();
+            return _stringField ??= _sb.ToString();
         }
 
         /// <summary>
@@ -60,8 +70,8 @@ namespace QuickFix.Fields
         /// </summary>
         public override string ToString()
         {
-            if (_changed)
-                makeStringFields();
+            if (_valChanged)
+                makeStringVal();
             return _stringVal;
         }
 
@@ -89,27 +99,41 @@ namespace QuickFix.Fields
         /// </summary>
         public override int getLength()
         {
-            if (_changed)
-                makeStringFields();
-            return CharEncoding.DefaultEncoding.GetByteCount(_stringField) + 1; // +1 for SOH
+            if (_fieldChanged)
+                buildStringField();
+            return _bytesLength;
         }
 
         /// <summary>
         /// checksum
         /// </summary>
-        public override int getTotal()
+        public override unsafe int  getTotal()
         {
-            if (_changed)
-                makeStringFields();
+            if (_fieldChanged)
+                buildStringField();
+            return _bytesTotal;
+        }
 
-            int sum = 0;
-            byte[] array = CharEncoding.DefaultEncoding.GetBytes(_stringField);
-            for (int i = 0; i < array.Length; i++)
+        private unsafe void SetByteParams()
+        {
+            char* buffer = stackalloc char[_sb.Length];
+            for (int i = 0; i < _sb.Length; i++)
             {
-                sum += array[i];
+                buffer[i] = _sb[i];
             }
 
-            return (sum + 1); // +1 for SOH
+            var bytePtrLength = CharEncoding.DefaultEncoding.GetMaxByteCount(_sb.Length);
+            byte* bytePtr = stackalloc byte[bytePtrLength];
+            ;
+            _bytesLength = CharEncoding.DefaultEncoding.GetBytes(buffer, _sb.Length, bytePtr, bytePtrLength) + 1;
+         
+            int sum = 0;
+            for (int i = 0; i < _bytesLength - 1; i++)
+            {
+                sum += bytePtr[i];
+            }
+
+            _bytesTotal = sum + 1; // +1 for SOH
         }
 
         protected abstract string makeString();
@@ -117,19 +141,49 @@ namespace QuickFix.Fields
         /// <summary>
         /// returns tag=val
         /// </summary>
-        private void makeStringFields()
+        private void buildStringField()
+        {
+            _stringField = null;
+            makeStringVal();
+            const char equals = '=';
+            _sb.Append(Tag);
+            _sb.Append(equals);
+            _sb.Append(_stringVal);
+            SetByteParams();
+            _fieldChanged = false;
+        }
+
+        private void makeStringVal()
         {
             _stringVal = makeString();
-            _stringField = Tag + "=" + _stringVal;
-            _changed = false;
+            _valChanged = false;
+        }
+
+        public override StringBuilder AppendFieldAsStringTo(StringBuilder builder)
+        {
+            if (_fieldChanged)
+                buildStringField();
+            builder.Append(_sb);
+            return builder;
+        }     
+
+        protected void OnDataChanged()
+        {
+            _valChanged = _fieldChanged = true;
+            _sb.Clear();
         }
 
         #region Private members
+
         private string _stringField;
-        private bool _changed;
+        private bool _valChanged;
+        private bool _fieldChanged;
+        private int _bytesTotal;
+        private int _bytesLength;
         private T _obj;
         private int _tag;
         private string _stringVal;
+    
         #endregion
     }
 }

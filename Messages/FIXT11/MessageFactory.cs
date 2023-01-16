@@ -51,6 +51,11 @@ namespace QuickFix
                 return null;
             }
 
+
+            public void ReturnIfReusable(QuickFix.Message m)
+            {
+            }
+
         }
     }
 }
