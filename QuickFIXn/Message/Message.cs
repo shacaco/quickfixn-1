@@ -67,6 +67,11 @@ namespace QuickFix
         protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
         private int field_ = 0;
         private bool validStructure_;
+        private ReusableFields _reusableFields;
+        private IntField _bodyLengthField = new IntField(-1);
+        private StringField _checksumField = new StringField(-1);
+
+        public ReusableFields ReusableFields => _reusableFields;
 
         #region Properties
 
@@ -132,14 +137,14 @@ namespace QuickFix
         /// <summary>
         /// Parse the message type (tag 35) from a FIX string
         /// </summary>
-        /// <param name="fixstring">the FIX string to parse</param>
+        /// <param name="fixString">the FIX string to parse</param>
         /// <param name="reusableField"></param>
         /// <returns>the message type as a MsgType object</returns>
         /// <exception cref="MessageParseError">if 35 tag is missing or malformed</exception>
-        public static StringField IdentifyType(ReadOnlySpan<char> fixstring, StringField reusableField = null)
+        public static StringField IdentifyType(ReadOnlySpan<char> fixString, StringField reusableField = null)
         {
-            var f = reusableField ?? StringField.Factory.GetNext();
-            f.Set(MsgType.TAG, GetMsgType(fixstring));
+            var f = reusableField ?? new StringField(-1);
+            f.Set(MsgType.TAG, GetMsgType(fixString));
             return f;
         }
 
@@ -151,7 +156,7 @@ namespace QuickFix
                 int tag = int.Parse(msg.Slice(pos, tagLength));
                 pos += tagLength + 1;
                 int fieldValueLength = msg.Slice(pos).IndexOf(SOH, StringComparison.Ordinal);
-                field ??= StringField.Factory.GetNext();    
+                field ??= new StringField(-1);    
                 field.Set(tag, msg.Slice(pos, fieldValueLength).ToString());
 
                 pos += fieldValueLength + 1;
@@ -343,6 +348,22 @@ namespace QuickFix
 
         #endregion
 
+        public void InitializeReusableFields(int stringFieldsCount = 30, int dateTimeFieldsCount = 30, int decimalFieldsCount = 30, int charFieldsCount = 10)
+        {
+            if (_reusableFields != null)
+                throw new InvalidOperationException($"{nameof(ReusableFields)} is already initialized");
+            if (stringFieldsCount < 1)
+                throw new ArgumentOutOfRangeException($"{nameof(stringFieldsCount)} must be grater that 0");
+            if (dateTimeFieldsCount < 1)
+                throw new ArgumentOutOfRangeException($"{nameof(dateTimeFieldsCount)} must be grater that 0");
+            if (decimalFieldsCount < 1)
+                throw new ArgumentOutOfRangeException($"{nameof(decimalFieldsCount)} must be grater that 0");
+            if (charFieldsCount < 1)
+                throw new ArgumentOutOfRangeException($"{nameof(charFieldsCount)} must be grater that 0");
+
+            _reusableFields = new ReusableFields(stringFieldsCount, dateTimeFieldsCount, decimalFieldsCount, charFieldsCount);
+        }
+
         public bool FromStringHeader(ReadOnlySpan<char> msg)
         {
             Clear();
@@ -387,10 +408,10 @@ namespace QuickFix
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
         /// <param name="reusableFields"></param>
         public void FromString(ReadOnlySpan<char> msg, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory, StringField[] reusableFields = null)
+            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             this.ApplicationDataDictionary = appDD;
-            FromString(msg, validate, sessionDD, appDD, msgFactory, false, reusableFields);
+            FromString(msg, validate, sessionDD, appDD, msgFactory, false);
         }
 
         /// <summary>
@@ -407,7 +428,7 @@ namespace QuickFix
         /// <param name="reusableFields"></param>
         public void FromString(ReadOnlySpan<char> msgstr, bool validate,
             DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
-            bool ignoreBody, StringField[] reusableFields = null)
+            bool ignoreBody)
         {
             this.ApplicationDataDictionary = appDD;
             Clear();
@@ -417,10 +438,9 @@ namespace QuickFix
             int count = 0;
             int pos = 0;
             DataDictionary.IFieldMapSpec msgMap = null;
-            int reusableFieldsIndex = 0;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, reusableFields?[reusableFieldsIndex++]);
+                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, ReusableFields?.GetNextReusableStringField());
 
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
@@ -852,17 +872,20 @@ namespace QuickFix
 
         public Message ClearAndInitialize()
         {
-            var bs = StringField.Factory.GetNext().Set(Tags.BeginString, Header.GetString(Tags.BeginString));
-            var mt = StringField.Factory.GetNext().Set(Tags.MsgType, Header.GetString(Tags.MsgType));
-            return ClearAndInitialize(bs, mt);
+            return ClearAndInitialize(Header.GetString(Tags.BeginString), Header.GetString(Tags.MsgType));
         }
 
-        internal Message ClearAndInitialize(IField beginString, IField msgType)
+        internal Message ClearAndInitialize(string beginString, string msgType)
         {
             field_ = 0;
+            _reusableFields?.ResetCounters();
+            var beginStringField = _reusableFields?.GetNextReusableStringField() ?? new StringField(-1);
+            beginStringField.Set(Tags.BeginString, beginString);
+            var msgTypeField = _reusableFields?.GetNextReusableStringField() ?? new StringField(-1);
+            msgTypeField.Set(Tags.MsgType, msgType);
             this.Header.Clear();
-            this.Header.SetField(beginString);
-            this.Header.SetField(msgType);
+            this.Header.SetField(beginStringField);
+            this.Header.SetField(msgTypeField);
             base.Clear();
             this.Trailer.Clear();
             validStructure_ = true;
@@ -897,9 +920,9 @@ namespace QuickFix
         {
             lock (lock_ToString)
             {
-                var bl = IntField.Factory.GetNext().Set(Tags.BodyLength, BodyLength());
+                var bl = _bodyLengthField.Set(Tags.BodyLength, BodyLength());
                 this.Header.SetField(bl, true);
-                var cs = StringField.Factory.GetNext().Set(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
+                var cs = _checksumField.Set(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
                 this.Trailer.SetField(cs, true);
                 _toStringBuilder.Clear();
                 this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);

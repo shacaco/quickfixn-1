@@ -1505,14 +1505,14 @@ namespace QuickFix
 
         private static IntField GetIntField(IntField reusable, int tag, int value)
         {
-            var field = reusable ?? IntField.Factory.GetNext();
+            var field = reusable ?? new IntField(-1);
             field.Set(tag, value);
             return field;
         }
 
         private static DateTimeField GetDateTimeField(DateTimeField reusable, int tag, DateTime value, TimeStampPrecision precision)
         {
-            var field = reusable ?? DateTimeField.Factory.GetNext();
+            var field = reusable ?? new DateTimeField(-1);
             field.Tag = tag;
             field.setValue(value, precision);
             return field;

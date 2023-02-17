@@ -1,13 +1,10 @@
 ﻿using System;
-using My_Collections;
 using QuickFix.Fields.Converters;
 
 namespace QuickFix.Fields
 {
     public class DateTimeField : FieldBase<DateTime>
     {
-        public static readonly FactoryRepo<DateTimeField> Factory = new FactoryRepo<DateTimeField>(500000, () => new DateTimeField(), 499000);
-
         private DateTimeField()
             : base(-1, DateTime.MinValue) { }
 

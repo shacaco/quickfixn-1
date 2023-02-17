@@ -140,9 +140,7 @@ namespace QuickFix
 
         private static StringField GetStringField(int tag, string value)
         {
-            var field = StringField.Factory.GetNext();
-            field.Set(tag, value);
-            return field;
+            return new StringField(tag, value);
         }
 
         public SessionID(string beginString, string senderCompID, string targetCompID)

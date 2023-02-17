@@ -22,7 +22,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Utilities\Utilities\My Collections\My Collections.csproj" />
     <ProjectReference Include="..\..\QuickFIXn\QuickFix.csproj" />
   </ItemGroup>
 
