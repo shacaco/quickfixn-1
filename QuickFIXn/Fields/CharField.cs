@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace QuickFix.Fields
 {
@@ -28,6 +26,11 @@ namespace QuickFix.Fields
         protected override string makeString()
         {
             return Converters.CharConverter.Convert(Obj);
+        }
+
+        public override IField GetCopy()
+        {
+            return new CharField(Tag, Obj);
         }
     }
 }

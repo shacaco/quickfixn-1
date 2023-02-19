@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace QuickFix.Fields
+﻿namespace QuickFix.Fields
 {
     /// <summary>
     /// A string-valued message field
@@ -27,6 +23,11 @@ namespace QuickFix.Fields
         protected override string makeString()
         {
             return Obj;
+        }
+
+        public override IField GetCopy()
+        {
+            return new StringField(Tag, Obj);
         }
     }
 }

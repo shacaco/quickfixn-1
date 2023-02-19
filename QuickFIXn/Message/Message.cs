@@ -12,7 +12,7 @@ namespace QuickFix
         public int[] HEADER_FIELD_ORDER = { Tags.BeginString, Tags.BodyLength, Tags.MsgType };
 
         public Header()
-            : base()
+            : base(new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5))
         { }
 
         public Header(Header src)
@@ -36,7 +36,7 @@ namespace QuickFix
         public int[] TRAILER_FIELD_ORDER = { Tags.SignatureLength, Tags.Signature, Tags.CheckSum };
 
         public Trailer()
-            : base()
+            : base(new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5))
         { }
 
         public Trailer(Trailer src)
@@ -67,11 +67,6 @@ namespace QuickFix
         protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
         private int field_ = 0;
         private bool validStructure_;
-        private ReusableFields _reusableFields;
-        private IntField _bodyLengthField = new IntField(-1);
-        private StringField _checksumField = new StringField(-1);
-
-        public ReusableFields ReusableFields => _reusableFields;
 
         #region Properties
 
@@ -83,7 +78,7 @@ namespace QuickFix
 
         #region Constructors
 
-        public Message()
+        public Message() : base(new ReusableFields.ReusableFieldsLengths(30,10,10,10,10,10))
         {
             this.Header = new Header();
             this.Trailer = new Trailer();
@@ -348,22 +343,6 @@ namespace QuickFix
 
         #endregion
 
-        public void InitializeReusableFields(int stringFieldsCount = 30, int dateTimeFieldsCount = 30, int decimalFieldsCount = 30, int charFieldsCount = 10)
-        {
-            if (_reusableFields != null)
-                throw new InvalidOperationException($"{nameof(ReusableFields)} is already initialized");
-            if (stringFieldsCount < 1)
-                throw new ArgumentOutOfRangeException($"{nameof(stringFieldsCount)} must be grater that 0");
-            if (dateTimeFieldsCount < 1)
-                throw new ArgumentOutOfRangeException($"{nameof(dateTimeFieldsCount)} must be grater that 0");
-            if (decimalFieldsCount < 1)
-                throw new ArgumentOutOfRangeException($"{nameof(decimalFieldsCount)} must be grater that 0");
-            if (charFieldsCount < 1)
-                throw new ArgumentOutOfRangeException($"{nameof(charFieldsCount)} must be grater that 0");
-
-            _reusableFields = new ReusableFields(stringFieldsCount, dateTimeFieldsCount, decimalFieldsCount, charFieldsCount);
-        }
-
         public bool FromStringHeader(ReadOnlySpan<char> msg)
         {
             Clear();
@@ -440,7 +419,7 @@ namespace QuickFix
             DataDictionary.IFieldMapSpec msgMap = null;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, ReusableFields?.GetNextReusableStringField());
+                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, ReusableFields.GetNextReusableStringField());
 
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
@@ -600,7 +579,7 @@ namespace QuickFix
             while (pos < msg.Length)
             {
                 grpPos = pos;
-                StringField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD);
+                StringField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD, ReusableFields.GetNextReusableStringField());
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -878,14 +857,10 @@ namespace QuickFix
         internal Message ClearAndInitialize(string beginString, string msgType)
         {
             field_ = 0;
-            _reusableFields?.ResetCounters();
-            var beginStringField = _reusableFields?.GetNextReusableStringField() ?? new StringField(-1);
-            beginStringField.Set(Tags.BeginString, beginString);
-            var msgTypeField = _reusableFields?.GetNextReusableStringField() ?? new StringField(-1);
-            msgTypeField.Set(Tags.MsgType, msgType);
             this.Header.Clear();
-            this.Header.SetField(beginStringField);
-            this.Header.SetField(msgTypeField);
+            this.Header.SetWithReusableField(Tags.BeginString, beginString);
+            this.Header.SetWithReusableField(Tags.MsgType, msgType);
+
             base.Clear();
             this.Trailer.Clear();
             validStructure_ = true;
@@ -920,10 +895,8 @@ namespace QuickFix
         {
             lock (lock_ToString)
             {
-                var bl = _bodyLengthField.Set(Tags.BodyLength, BodyLength());
-                this.Header.SetField(bl, true);
-                var cs = _checksumField.Set(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
-                this.Trailer.SetField(cs, true);
+                this.Header.SetWithReusableField(Tags.BodyLength, BodyLength());
+                this.Trailer.SetWithReusableField(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
                 _toStringBuilder.Clear();
                 this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
@@ -981,7 +954,7 @@ namespace QuickFix
             string valueDescription = "";
 
             // Non-Group Fields
-            foreach (var field in fields)
+            foreach (var field in fields.OrderBy(f=>f.Key))
             {
                 if (QuickFix.Fields.CheckSum.TAG == field.Value.Tag)
                     continue; // FIX JSON Encoding does not include CheckSum

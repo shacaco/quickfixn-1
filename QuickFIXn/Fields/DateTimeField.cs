@@ -42,6 +42,11 @@ namespace QuickFix.Fields
         {
             return Converters.DateTimeConverter.Convert(Obj, timePrecision);
         }
+
+        public override IField GetCopy()
+        {
+            return new DateTimeField(Tag, Obj, timePrecision);
+        }
     }
 
     public class DateOnlyField : DateTimeField
@@ -62,6 +67,11 @@ namespace QuickFix.Fields
         {
             return Converters.DateTimeConverter.ConvertDateOnly(Obj);
         }
+
+        public override IField GetCopy()
+        {
+            return new DateOnlyField(Tag, Obj, timePrecision);
+        }
     }
 
     public class TimeOnlyField : DateTimeField
@@ -81,6 +91,11 @@ namespace QuickFix.Fields
         protected override string makeString()
         {
             return Converters.DateTimeConverter.ConvertTimeOnly(Obj, base.timePrecision); 
+        }
+
+        public override IField GetCopy()
+        {
+            return new TimeOnlyField(Tag, Obj, timePrecision);
         }
     }
 }

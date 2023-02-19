@@ -28,7 +28,6 @@ namespace QuickFix
             _appDD = appDD;
             _msgFactory = msgFactory;
             _reusableMessage = new Message();
-            _reusableMessage.InitializeReusableFields(100);
         }
 
         internal Message Build(ReadOnlySpan<char> msg, bool validateLengthAndChecksum)

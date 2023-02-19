@@ -165,7 +165,7 @@ namespace QuickFix.Fields
                 buildStringField();
             builder.Append(_sb);
             return builder;
-        }     
+        }
 
         protected void OnDataChanged()
         {

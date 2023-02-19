@@ -31,5 +31,7 @@ namespace QuickFix.Fields
         /// checksum
         /// </summary>
         public abstract int getTotal();
+
+        public abstract IField GetCopy();
     }
 }

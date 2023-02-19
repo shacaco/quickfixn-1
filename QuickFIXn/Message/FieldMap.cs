@@ -15,11 +15,12 @@ namespace QuickFix
         /// <summary>
         /// Default constructor
         /// </summary>
-        public FieldMap()
+        public FieldMap(ReusableFields.ReusableFieldsLengths lengths = null)
         {
             _fields = new Dictionary<int, Fields.IField>(100);
             _groups = new Dictionary<int, List<Group>>();
             this.RepeatedTags = new List<Fields.IField>();
+            ReusableFields = new ReusableFields(lengths ?? new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5));
         }
 
         /// <summary>
@@ -47,13 +48,11 @@ namespace QuickFix
         {
             this._fieldOrder = src._fieldOrder;
 
-            this._fields = new Dictionary<int, Fields.IField>(src._fields);
+            this._fields = src._fields.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetCopy());
 
-            this._groups = new Dictionary<int, List<Group>>();
-            foreach (KeyValuePair<int, List<Group>> g in src._groups)
-                this._groups.Add(g.Key, new List<Group>(g.Value));
+            this._groups = src._groups.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Select(g=> new Group(g)).ToList());
 
-            this.RepeatedTags = new List<Fields.IField>(src.RepeatedTags);
+            this.RepeatedTags = new List<Fields.IField>(src.RepeatedTags.Select(t=>t.GetCopy()));
         }
 
         /// <summary>
@@ -117,6 +116,36 @@ namespace QuickFix
 
             SetField(field);
             return true;
+        }
+
+        public bool SetWithReusableField(int tag, string value)
+        {
+            return SetField(ReusableFields.GetNextReusableStringField().Set(tag, value), true);
+        }
+
+        public bool SetWithReusableField(int tag, DateTime value)
+        {
+            return SetField(ReusableFields.GetNextReusableDateTimeField().Set(tag, value), true);
+        }
+
+        public bool SetWithReusableField(int tag, decimal value)
+        {
+            return SetField(ReusableFields.GetNextReusableDecimalField().Set(tag, value), true);
+        }
+
+        public bool SetWithReusableField(int tag, char value)
+        {
+            return SetField(ReusableFields.GetNextReusableCharField().Set(tag, value), true);
+        }
+
+        public bool SetWithReusableField(int tag, bool value)
+        {
+            return SetField(ReusableFields.GetNextReusableBooleanField().Set(tag, value), true);
+        }
+
+        public bool SetWithReusableField(int tag, int value)
+        {
+            return SetField(ReusableFields.GetNextReusableIntField().Set(tag, value), true);
         }
 
         /// <summary>
@@ -540,6 +569,7 @@ namespace QuickFix
             _fields.Clear();
             _groups.Clear();
             RepeatedTags?.Clear();
+            ReusableFields.ResetCounters();
             _fieldOrder = null;
         }
 
@@ -721,6 +751,9 @@ namespace QuickFix
         /// Used for validation.  Only set during Message parsing.
         /// </summary>
         public List<Fields.IField> RepeatedTags { get; private set; }
+
+        protected ReusableFields ReusableFields { get; }
+
         #endregion
 
         #region IEnumerable<KeyValuePair<int,IField>> Members

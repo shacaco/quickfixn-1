@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace QuickFix.Fields
 {
@@ -35,6 +32,11 @@ namespace QuickFix.Fields
         protected override string makeString()
         {
             return Converters.BoolConverter.Convert(Obj);
+        }
+
+        public override IField GetCopy()
+        {
+            return new BooleanField(Tag, Obj);
         }
     }
 }
