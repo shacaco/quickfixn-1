@@ -891,12 +891,17 @@ namespace QuickFix
             }
         }
 
+        private IntField _bodyLength = new IntField(Tags.BodyLength);
+        private StringField _checkSum = new StringField(Tags.CheckSum);
+
         public StringBuilder ToStringBuilder(bool orderBodyPostFieldOrder)
         {
             lock (lock_ToString)
             {
-                this.Header.SetWithReusableField(Tags.BodyLength, BodyLength());
-                this.Trailer.SetWithReusableField(Tags.CheckSum, Fields.Converters.CheckSumConverter.Convert(CheckSum()));
+                _bodyLength.setValue(BodyLength());
+                this.Header.SetField(_bodyLength);
+                _checkSum.setValue(Fields.Converters.CheckSumConverter.Convert(CheckSum()));
+                this.Trailer.SetField(_checkSum);
                 _toStringBuilder.Clear();
                 this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
