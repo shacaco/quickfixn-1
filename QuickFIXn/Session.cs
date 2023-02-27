@@ -578,16 +578,17 @@ namespace QuickFix
         /// Process a message from the counterparty.
         /// </summary>
         /// <param name="msgBuilder"></param>
+        /// <param name="msg"></param>
         internal void Next(MessageBuilder msgBuilder, ReadOnlySpan<char> msg)
         {
             if (!IsSessionTime)
             {
-                Reset("Out of SessionTime (Session.Next(message))", "Message received outside of session time");
+                Reset("Out of SessionTime (Session.Next(msgBuilder, msg))", "Message received outside of session time");
                 return;
             }
 
             if (IsNewSession)
-                state_.Reset("New session (detected in Next(Message))");
+                state_.Reset("New session (detected in Next(msgBuilder, msg))");
 
             Message message = null; // declared outside of try-block so that catch-blocks can use it
 
@@ -598,7 +599,6 @@ namespace QuickFix
                 if (appDoesEarlyIntercept_)
                     ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
 
-                Header header = message.Header;
                 string msgType = msgBuilder.MsgType.Obj;
                 string beginString = msgBuilder.BeginString.Obj;
 
@@ -1122,10 +1122,11 @@ namespace QuickFix
 
         protected void DoTargetTooHigh(Message msg, int msgSeqNum)
         {
-            string beginString = msg.Header.GetString(Fields.Tags.BeginString);
+            var message = new Message(msg.ToString(), false);
+            string beginString = message.Header.GetString(Fields.Tags.BeginString);
 
             this.Log.OnEvent("MsgSeqNum too high, expecting " + state_.NextTargetMsgSeqNum + " but received " + msgSeqNum);
-            state_.Queue(msgSeqNum, msg);
+            state_.Queue(msgSeqNum, message);
 
             if (state_.ResendRequested())
             {
