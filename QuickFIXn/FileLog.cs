@@ -95,7 +95,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
             }
         }
 
@@ -105,7 +105,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
+                messageLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow, TimeStampPrecision.Microsecond) + " : " + msg.ToString());
             }
         }
 
@@ -115,7 +115,7 @@ namespace QuickFix
 
             lock (sync_)
             {
-                eventLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(MyDateTime.PreciseDateTime.NowUTC, TimeStampPrecision.Microsecond) + " : "+ s);
+                eventLog_.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow, TimeStampPrecision.Microsecond) + " : "+ s);
             }
         }
 

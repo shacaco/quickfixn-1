@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using MyDateTime;
 using System.Threading;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
@@ -39,7 +38,7 @@ namespace QuickFix
         public bool IsInitiator { get { return state_.IsInitiator; } }
         public bool IsAcceptor { get { return !state_.IsInitiator; } }
         public bool IsEnabled { get { return state_.IsEnabled; } }
-        public bool IsSessionTime { get { return schedule_.IsSessionTime(MyDateTime.PreciseDateTime.NowUTC); } }
+        public bool IsSessionTime { get { return schedule_.IsSessionTime(DateTime.UtcNow); } }
         public bool IsLoggedOn { get { return ReceivedLogon && SentLogon; } }
         public bool SentLogon { get { return state_.SentLogon; } }
         public bool ReceivedLogon { get { return state_.ReceivedLogon; } }
@@ -569,7 +568,7 @@ namespace QuickFix
         {
             Utils.StopWatchRepo.TryStartWatch(out int id);
             this.Log.OnIncoming(msg);
-            LastIncomingMessageTime = PreciseDateTime.Now;
+            LastIncomingMessageTime = DateTime.Now;
             Next(_messageBuilder, msg);
             Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", id);
         }
@@ -1030,7 +1029,7 @@ namespace QuickFix
                 return false;
             }
 
-            state_.LastReceivedTimeDT = MyDateTime.PreciseDateTime.NowUTC;
+            state_.LastReceivedTimeDT = DateTime.UtcNow;
             state_.TestRequestCounter = 0;
 
             if (Message.IsAdminMsgType(msgType))
@@ -1285,7 +1284,7 @@ namespace QuickFix
                 logon.SetField(new Fields.ResetSeqNumFlag(true));
 
             InitializeHeader(logon);
-            state_.LastReceivedTimeDT = MyDateTime.PreciseDateTime.NowUTC;
+            state_.LastReceivedTimeDT = DateTime.UtcNow;
             state_.TestRequestCounter = 0;
             state_.SentLogon = true;
             return SendRaw(logon, 0);
@@ -1521,7 +1520,7 @@ namespace QuickFix
 
         protected void InitializeHeader(Message m, int msgSeqNum, IntField reusableMsgNum = null, IntField reusableLastMsgSeqNumProcessed = null, DateTimeField reusableSendingTime = null)
         {
-            state_.LastSentTimeDT = MyDateTime.PreciseDateTime.NowUTC;
+            state_.LastSentTimeDT = DateTime.UtcNow;
 
             m.Header.SetField(this.SessionID.FieldsDictionary[BeginString.TAG]);
             m.Header.SetField(this.SessionID.FieldsDictionary[SenderCompID.TAG]);
@@ -1561,7 +1560,7 @@ namespace QuickFix
             else
                 fix42OrAbove = this.SessionID.BeginString.CompareTo(FixValues.BeginString.FIX42) >= 0;
 
-            header.SetField(GetDateTimeField(reusableSendingTime, SendingTime.TAG, MyDateTime.PreciseDateTime.NowUTC, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
+            header.SetField(GetDateTimeField(reusableSendingTime, SendingTime.TAG, DateTime.UtcNow, fix42OrAbove ? TimeStampPrecision : TimeStampPrecision.Second));
         }
 
         protected void Persist(Message message, ReadOnlySpan<char> messageSpan)
@@ -1580,7 +1579,7 @@ namespace QuickFix
                 return true;
 
             var sendingTime = msg.Header.GetDateTime(Fields.Tags.SendingTime);
-            System.TimeSpan tmSpan = MyDateTime.PreciseDateTime.NowUTC - sendingTime;
+            System.TimeSpan tmSpan = DateTime.UtcNow - sendingTime;
             if (System.Math.Abs(tmSpan.TotalSeconds) > MaxLatency)
             {
                 return false;

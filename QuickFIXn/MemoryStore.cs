@@ -58,7 +58,7 @@ namespace QuickFix
             NextSenderMsgSeqNum = 1;
             NextTargetMsgSeqNum = 1;
             Messages.Clear();
-            _creationTime = MyDateTime.PreciseDateTime.NowUTC;
+            _creationTime = DateTime.UtcNow;
         }
 
         public void Refresh()

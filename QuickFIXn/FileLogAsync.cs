@@ -126,7 +126,7 @@ namespace QuickFix
         private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg)
         {
             var package = _buffer.Dequeue();
-            package.Time = MyDateTime.PreciseDateTime.NowUTC;
+            package.Time = DateTime.UtcNow;
             msg.CopyTo(package.Buffer.AsSpan());
             package.Length = msg.Length;
             dest.Enqueue(package);
