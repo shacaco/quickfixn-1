@@ -44,7 +44,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Utilities\Utilities\My Collections\My Collections.csproj" />
     <ProjectReference Include="..\..\Utilities\Utilities\Utils\Utils\Utils.csproj" />
   </ItemGroup>
 </Project>
