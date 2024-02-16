@@ -254,7 +254,10 @@ namespace QuickFix
 
         private void SetSeqNumTask()
         {
-            ProcessPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
+#pragma warning disable CA1416
+            if (ProcessPrivileges.IsSetThreadPriorityAllowed()) 
+                ProcessPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
+#pragma warning restore CA1416
             while (true)
             {
                 _autoResetEvent.WaitOne();
