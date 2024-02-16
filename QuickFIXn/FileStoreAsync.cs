@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using QuickFix.Util;
+using Utils;
 
 namespace QuickFix
 {
@@ -81,7 +82,7 @@ namespace QuickFix
             headerFileName_ = System.IO.Path.Combine(path, prefix + ".header");
             sessionFileName_ = System.IO.Path.Combine(path, prefix + ".session");
             open();
-            _setThread = new Thread(SetSeqNumTask){ Priority= ThreadPriority.Lowest, IsBackground = true };
+            _setThread = new Thread(SetSeqNumTask){ IsBackground = true };
             _setThread.Start();
         }
 
@@ -253,6 +254,7 @@ namespace QuickFix
 
         private void SetSeqNumTask()
         {
+            ProcessPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
             while (true)
             {
                 _autoResetEvent.WaitOne();

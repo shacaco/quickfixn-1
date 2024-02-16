@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using QuickFix.Fields.Converters;
+using Utils;
 using Utils.Collections;
 
 namespace QuickFix
@@ -57,7 +58,7 @@ namespace QuickFix
             messageLog_.AutoFlush = true;
             eventLog_.AutoFlush = true;
 
-            _writeThread = new Thread(Write) { Priority = ThreadPriority.Lowest, IsBackground = true };
+            _writeThread = new Thread(Write) { IsBackground = true };
             _writeThread.Start();
         }
 
@@ -133,6 +134,7 @@ namespace QuickFix
 
         private void Write()
         {
+            ProcessPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
             try
             {
                 while (!_abortTask)
