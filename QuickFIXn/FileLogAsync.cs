@@ -134,10 +134,9 @@ namespace QuickFix
 
         private void Write()
         {
-#pragma warning disable CA1416
-            if (ProcessPrivileges.IsSetThreadPriorityAllowed())
-                ProcessPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
-#pragma warning restore CA1416
+            if (ApplicationPrivileges.Configuration.ThreadPriorityEnabled)
+                ApplicationPrivileges.ThreadPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
+
             try
             {
                 while (!_abortTask)
