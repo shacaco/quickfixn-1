@@ -14,6 +14,8 @@ namespace QuickFix
     /// </summary>
     public class FileStoreAsync : IMessageStore
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         private struct MsgDef
         {
             public long index { get; internal set; }
@@ -255,7 +257,10 @@ namespace QuickFix
         private void SetSeqNumTask()
         {
             if (ApplicationPrivileges.Configuration.ThreadPriorityEnabled)
+            {
+                Logger.Info($"Setting thread priority to {ThreadPriority.Lowest}");
                 ApplicationPrivileges.ThreadPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
+            }
 
             while (true)
             {

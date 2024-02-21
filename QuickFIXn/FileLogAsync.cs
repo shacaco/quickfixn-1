@@ -13,6 +13,7 @@ namespace QuickFix
     /// </summary>
     public class FileLogAsync : ILog, System.IDisposable
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private const char NullChar = '\0';
 
         private static readonly char[] Colon = " : ".ToCharArray();
@@ -135,7 +136,10 @@ namespace QuickFix
         private void Write()
         {
             if (ApplicationPrivileges.Configuration.ThreadPriorityEnabled)
+            {
+                Logger.Info($"Setting thread priority to {ThreadPriority.Lowest}");
                 ApplicationPrivileges.ThreadPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
+            }
 
             try
             {
