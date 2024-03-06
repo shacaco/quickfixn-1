@@ -352,7 +352,7 @@ namespace QuickFix
 
         #region MessageStore-manipulating Members
 
-        public bool Set(int msgSeqNum, ReadOnlySpan<char> msg)
+        public bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg)
         {
             lock (_sync) { return MessageStore.Set(msgSeqNum, msg); }
         }

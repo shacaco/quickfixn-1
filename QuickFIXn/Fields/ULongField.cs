@@ -26,5 +26,10 @@ namespace QuickFix.Fields
         {
             return Converters.ULongConverter.Convert(Obj);
         }
+
+        public override IField GetCopy()
+        {
+            return new ULongField(Tag, Obj);
+        }
     }
 }

@@ -11,8 +11,9 @@ namespace QuickFix
     /// <summary>
     /// Field container used by messages, groups, and composites
     /// </summary>
-    public class FieldMap : IEnumerable<KeyValuePair<int, IField>> {
-        private SortedDictionary<int, IField> _fields = new();
+    public class FieldMap : IEnumerable<KeyValuePair<int, IField>> 
+    {
+        private Dictionary<int, IField> _fields = new(100);
 
         /// FIXME sorted dict is a hack to get quasi-correct field order
         private Dictionary<int, List<Group>> _groups = new();
@@ -27,14 +28,14 @@ namespace QuickFix
         /// </summary>
         public List<IField> RepeatedTags { get; private set; } = new();
 
+        protected ReusableFields ReusableFields { get; }
+
+
         /// <summary>
         /// Default constructor
         /// </summary>
         public FieldMap(ReusableFields.ReusableFieldsLengths lengths = null)
         {
-            _fields = new Dictionary<int, Fields.IField>(100);
-            _groups = new Dictionary<int, List<Group>>();
-            this.RepeatedTags = new List<Fields.IField>();
             ReusableFields = new ReusableFields(lengths ?? new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5));
         }
 
@@ -720,22 +721,6 @@ namespace QuickFix
         {
             return _groups.Count;
         }
-
-        #region Private Members
-        private Dictionary<int, Fields.IField> _fields; /// FIXME sorted dict is a hack to get quasi-correct field order
-        private Dictionary<int, List<Group>> _groups;
-        protected int[] _fieldOrder;
-        #endregion
-
-        #region Properties
-        /// <summary>
-        /// Used for validation.  Only set during Message parsing.
-        /// </summary>
-        public List<Fields.IField> RepeatedTags { get; private set; }
-
-        protected ReusableFields ReusableFields { get; }
-
-        #endregion
 
         #region IEnumerable<KeyValuePair<int,IField>> Members
 
