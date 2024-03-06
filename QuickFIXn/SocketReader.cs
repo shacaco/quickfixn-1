@@ -77,7 +77,7 @@ namespace QuickFix
             try {
                 // Begin read if it is not already started
                 _currentReadTask ??= _stream.ReadAsync(buffer, 0, buffer.Length, _readCancellationTokenSource.Token);
-
+                
                 if (_currentReadTask.Wait(timeoutMilliseconds)) {
                     // Dispose/nullify currentReadTask *before* retreiving .Result.
                     //   Accessting .Result can throw an exception, so we need to reset currentReadTask

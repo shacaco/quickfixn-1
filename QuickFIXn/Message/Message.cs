@@ -15,8 +15,9 @@ namespace QuickFix.Message
     /// </summary>
     public class Message : FieldMap
     {
-        private static readonly string MSG_TYPE_STRING = $"{SOH}35=";
-        public const char SOH = '\u0001';
+        private static readonly string MSG_TYPE_STRING = $"{SohChar}35=";
+        public const char SohChar = '\u0001';
+        public const string SohString = "\u0001";
 
         public const string Equal = "=";
         protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
@@ -102,7 +103,7 @@ namespace QuickFix.Message
                 int tagLength = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal);
                 int tag = int.Parse(msg.Slice(pos, tagLength));
                 pos += tagLength + 1;
-                int fieldValueLength = msg.Slice(pos).IndexOf(SOH, StringComparison.Ordinal);
+                int fieldValueLength = msg.Slice(pos).IndexOf(SohString, StringComparison.Ordinal);
                 field ??= new StringField(-1);
                 field.Set(tag, msg.Slice(pos, fieldValueLength).ToString());
 
@@ -229,7 +230,7 @@ namespace QuickFix.Message
 
         public static SessionID GetReverseSessionId(string msg)
         {
-            Message m = new Message(msg);
+            Message m = new Message(msg, true);
             return GetReverseSessionId(m);
         }
 
@@ -248,7 +249,7 @@ namespace QuickFix.Message
                     throw new Exception();
 
                 var objStartIndex = msgTypeTagIndex + MSG_TYPE_STRING.Length;
-                var nextSOHWithin = msg.Slice(objStartIndex).IndexOf(SOH, StringComparison.Ordinal);
+                var nextSOHWithin = msg.Slice(objStartIndex).IndexOf(SohString, StringComparison.Ordinal);
                 if (nextSOHWithin < 0)
                     throw new Exception();
 
@@ -304,7 +305,7 @@ namespace QuickFix.Message
 
             int pos = 0;
             int count = 0;
-            while (pos < msg.Length)
+            while (pos < msgstr.Length)
             {
                 StringField f = ExtractField(msg, ref pos);
 
