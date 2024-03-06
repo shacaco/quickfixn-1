@@ -15,6 +15,12 @@ namespace QuickFix
             }
 
 
+            public void ReturnIfReusable(QuickFix.Message.Message m)
+            {
+
+            }
+
+
             public QuickFix.Message.Message Create(string beginString, QuickFix.Fields.ApplVerID applVerId, string msgType)
             {
                 return Create(beginString, msgType);
@@ -272,11 +278,6 @@ namespace QuickFix
                 }
 
                 return null;
-            }
-
-
-            public void ReturnIfReusable(QuickFix.Message.Message m)
-            {
             }
 
         }

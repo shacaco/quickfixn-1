@@ -37,7 +37,7 @@ public static class GenMessages {
             "{",
             $"    namespace {dd.IdentifierNoDots}",
             "    {",
-            "        public abstract class Message : QuickFix.Message",
+            "        public abstract class Message : QuickFix.Message.Message",
             "        {",
             "            public Message()",
             "                : base()",

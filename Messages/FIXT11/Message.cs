@@ -4,7 +4,7 @@ namespace QuickFix
 {
     namespace FIXT11
     {
-        public abstract class Message : QuickFix.Message
+        public abstract class Message : QuickFix.Message.Message
         {
             public Message()
                 : base()

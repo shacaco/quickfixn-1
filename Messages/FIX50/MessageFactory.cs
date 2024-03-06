@@ -15,13 +15,19 @@ namespace QuickFix
             }
 
 
-            public QuickFix.Message Create(string beginString, QuickFix.Fields.ApplVerID applVerId, string msgType)
+            public void ReturnIfReusable(QuickFix.Message.Message m)
+            {
+
+            }
+
+
+            public QuickFix.Message.Message Create(string beginString, QuickFix.Fields.ApplVerID applVerId, string msgType)
             {
                 return Create(beginString, msgType);
             }
 
 
-            public QuickFix.Message Create(string beginString, string msgType)
+            public QuickFix.Message.Message Create(string beginString, string msgType)
             {
                 switch (msgType)
                 {
@@ -120,7 +126,7 @@ namespace QuickFix
                     case QuickFix.FIX50.TradingSessionListRequest.MsgType: return new QuickFix.FIX50.TradingSessionListRequest();
                 }
 
-                return new QuickFix.Message();
+                return new QuickFix.Message.Message();
             }
 
 
@@ -1824,11 +1830,6 @@ namespace QuickFix
                 }
 
                 return null;
-            }
-
-
-            public void ReturnIfReusable(QuickFix.Message m)
-            {
             }
 
         }

@@ -8,7 +8,10 @@ using DDTool.Structures;
 namespace DDTool;
 
 public static class Program {
-    static void Main(string[] args) {
+    static void Main(string[] args)
+    {
+        var files = Directory.GetFiles("C:\\Users\\shaca\\OneDrive\\DEV\\source\\GitHub\\quickfixn-fork\\spec\\fix");
+        args = args.Concat(files).ToArray();
         var options = new Options(args);
 
         if (options.DDFiles.Count < 1) {

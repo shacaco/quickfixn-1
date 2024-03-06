@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DDTool": {
+      "commandName": "Project",
+      "commandLineArgs": "--outputdir C:\\Users\\shaca\\OneDrive\\DEV\\source\\GitHub\\quickfixn-fork\\"
+    }
+  }
+}
