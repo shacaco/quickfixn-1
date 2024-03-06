@@ -46,7 +46,7 @@ namespace UnitTests
         [Test]
         public void testRequiredArgs()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             Assert.Throws(typeof(QuickFix.ConfigError), delegate { new QuickFix.SessionSchedule(settings); });
 
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
@@ -62,7 +62,7 @@ namespace UnitTests
         [Test]
         public void testOptArgs()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -76,7 +76,7 @@ namespace UnitTests
         [Test]
         public void testDailyIsSessionTimeAllDay()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -91,7 +91,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionSameDayAllWeek()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -117,7 +117,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionSameDayMostWeek()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "05:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -143,7 +143,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionSameDayOneDay()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "05:00:00");
 
@@ -169,7 +169,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionMultiDay()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -195,7 +195,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionMultiDayOverlap()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
 
@@ -222,7 +222,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionMultiDayHours()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "07:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "15:00:00");
 
@@ -256,7 +256,7 @@ namespace UnitTests
         [Test]
         public void testWeeklySessionMultiDayHoursOverlap()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "15:00:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "07:00:00");
 
@@ -281,7 +281,7 @@ namespace UnitTests
         [Test]
         public void testDailyIsSessionTime()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "00:12:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "06:00:23");
 
@@ -298,7 +298,7 @@ namespace UnitTests
         [Test]
         public void testDailyIsSessionTimeWrapAround()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "06:00:23");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:12:00");
 
@@ -316,7 +316,7 @@ namespace UnitTests
         [Test]
         public void testInvalidTimeZone()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "06:00:23");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:12:00");
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, "Doh");
@@ -327,7 +327,7 @@ namespace UnitTests
         [Test]
         public void testLocalTimeTimeZoneConflict()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "06:00:23");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "00:12:00");
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, "Doh");
@@ -340,7 +340,7 @@ namespace UnitTests
         [Test]
         public void testTimeZone()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID);
@@ -354,104 +354,9 @@ namespace UnitTests
         }
 
         [Test]
-        public void testLastEndTime_takesUtcOnly()
-        {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
-            settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
-            settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
-
-            QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
-
-            Assert.Throws<ArgumentException>(
-                delegate { sched.LastEndTime(new DateTime(2012, 10, 18, 12, 00, 00, DateTimeKind.Local)); });
-            Assert.Throws<ArgumentException>(
-                delegate { sched.LastEndTime(new DateTime(2012, 10, 18, 12, 00, 00, DateTimeKind.Unspecified)); });
-        }
-
-        [Test]
-        public void testLastEndTime_DailySessions()
-        {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
-            settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
-            settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
-            QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
-
-            DateTime thisDayEnd = new DateTime(2013, 02, 05, 16, 00, 00, DateTimeKind.Utc);
-            DateTime prevDayEnd = new DateTime(2013, 02, 04, 16, 00, 00, DateTimeKind.Utc);
-
-            // before starttime
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 08, 00, 00, DateTimeKind.Utc)));
-            // during session
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 10, 00, 00, DateTimeKind.Utc)));
-            // equals endtime
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(thisDayEnd));
-            // after endtime
-            Assert.AreEqual(thisDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 17, 00, 00, DateTimeKind.Utc)));
-
-            // ==========
-            // Settings file is specified in a zone (est, -5)
-            settings = new QuickFix.Dictionary();
-            settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
-            settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
-            settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
-            sched = new QuickFix.SessionSchedule(settings);
-
-            // before starttime
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 08, 00, 00, DateTimeKind.Utc)));
-            // during session
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 10, 00, 00, DateTimeKind.Utc)));
-            // equals endtime
-            Assert.AreEqual(prevDayEnd, sched.LastEndTime(thisDayEnd));
-            // after endtime
-            Assert.AreEqual(thisDayEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 17, 00, 00, DateTimeKind.Utc)));
-        }
-
-        [Test]
-        public void testLastEndTime_WeeklySessions()
-        {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
-            settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
-            settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
-            settings.SetDay(QuickFix.SessionSettings.START_DAY, System.DayOfWeek.Monday);
-            settings.SetDay(QuickFix.SessionSettings.END_DAY, System.DayOfWeek.Friday);
-            QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
-
-            DateTime thisWeekEnd = new DateTime(2013, 02, 08, 16, 00, 00, DateTimeKind.Utc);
-            DateTime prevWeekEnd = new DateTime(2013, 02, 01, 16, 00, 00, DateTimeKind.Utc);
-
-            // before starttime
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 04, 08, 00, 00, DateTimeKind.Utc)));
-            // during session
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 08, 00, 00, DateTimeKind.Utc)));
-            // equals endtime
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(thisWeekEnd));
-            // after endtime
-            Assert.AreEqual(thisWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 08, 17, 00, 00, DateTimeKind.Utc)));
-
-            // ==========
-            // Settings file is specified in a zone (est, -5)
-            settings = new QuickFix.Dictionary();
-            settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
-            settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
-            settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
-            settings.SetDay(QuickFix.SessionSettings.START_DAY, System.DayOfWeek.Monday);
-            settings.SetDay(QuickFix.SessionSettings.END_DAY, System.DayOfWeek.Friday);
-            sched = new QuickFix.SessionSchedule(settings);
-
-            // before starttime
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 04, 08, 00, 00, DateTimeKind.Utc)));
-            // during session
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 05, 08, 00, 00, DateTimeKind.Utc)));
-            // equals endtime
-            Assert.AreEqual(prevWeekEnd, sched.LastEndTime(thisWeekEnd));
-            // after endtime
-            Assert.AreEqual(thisWeekEnd, sched.LastEndTime(new DateTime(2013, 02, 08, 17, 00, 00, DateTimeKind.Utc)));
-        }
-
-        [Test]
         public void testNextEndTime_takesUtcOnly()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
@@ -466,7 +371,7 @@ namespace UnitTests
         [Test]
         public void testNextEndTime_Daily()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
@@ -480,7 +385,7 @@ namespace UnitTests
 
             // ==========
             // Settings file is specified in a zone (est, -5)
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
@@ -495,7 +400,7 @@ namespace UnitTests
 
             // ==========
             // Time zone during Daylight Savings
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "05:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "12:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-4 for DST
@@ -512,7 +417,7 @@ namespace UnitTests
         [Test]
         public void testNextEndTime_Weekly()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             settings.SetDay(QuickFix.SessionSettings.START_DAY, System.DayOfWeek.Monday);
@@ -529,7 +434,7 @@ namespace UnitTests
 
             // ==========
             // Settings file is specified in a zone (est, -5)
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
@@ -547,7 +452,7 @@ namespace UnitTests
 
             // ==========
             // Time zone during Daylight Savings
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "05:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "12:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-4 for DST
@@ -568,7 +473,7 @@ namespace UnitTests
         [Test]
         public void testIsNewSession_takesUtcOnly()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
@@ -586,7 +491,7 @@ namespace UnitTests
         [Test]
         public void testIsNewSession_Daily()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
@@ -606,7 +511,7 @@ namespace UnitTests
 
             // ==========
             // Settings file is specified in a zone (est, -5)
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
@@ -627,7 +532,7 @@ namespace UnitTests
 
             // ==========
             // Time zone during Daylight savings
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "05:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "12:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-4 during dst
@@ -650,7 +555,7 @@ namespace UnitTests
         [Test]
         public void testAdjustDateTime()
         {
-            QuickFix.Dictionary settings = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "09:30:00");
             settings.SetString(QuickFix.SessionSettings.END_TIME, "16:00:00");
             QuickFix.SessionSchedule sched = new QuickFix.SessionSchedule(settings);
@@ -666,7 +571,7 @@ namespace UnitTests
             Assert.AreEqual(d2, sched.AdjustUtcDateTime(d2));
 
             // 3) if settings has a TimeZone, convert to TimeZone
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-5
@@ -678,7 +583,7 @@ namespace UnitTests
             Util.UtcDateTimeSerializerTests.AssertHackyDateTimeEquality(d3expected, d3actual);
 
             //    now with Pacific Standard Time
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, PACIFIC_STANDARD_TIME_ZONE_ID); //-5
@@ -690,7 +595,7 @@ namespace UnitTests
             Util.UtcDateTimeSerializerTests.AssertHackyDateTimeEquality(d3expected, d3actual);
 
             // 4) TimeZone with daylight savings
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.TIME_ZONE, EASTERN_STANDARD_TIME_ZONE_ID); //-4 in June
@@ -702,7 +607,7 @@ namespace UnitTests
             Util.UtcDateTimeSerializerTests.AssertHackyDateTimeEquality(d4expected, d4actual);
 
             // 5) if settings has UseLocalTime, convert to local time
-            settings = new QuickFix.Dictionary();
+            settings = new QuickFix.SettingsDictionary();
             settings.SetString(QuickFix.SessionSettings.START_TIME, "04:30:00"); // 09:30:00 utc
             settings.SetString(QuickFix.SessionSettings.END_TIME, "11:00:00");   // 16:00:00 utc
             settings.SetString(QuickFix.SessionSettings.USE_LOCAL_TIME, "Y");

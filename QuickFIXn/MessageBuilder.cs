@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using QuickFix.Fields;
 
@@ -5,12 +6,12 @@ namespace QuickFix
 {
     internal class MessageBuilder
     {
-        private readonly DataDictionary.DataDictionary _sessionDD;
-        private readonly DataDictionary.DataDictionary _appDD;
-        private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
+        private readonly DataDictionary.DataDictionary _sessionDict;
+        private readonly DataDictionary.DataDictionary _appDict;
         private readonly IMessageFactory _msgFactory;
         private readonly Message _reusableMessage;
-        private Message _message;
+        private Message? _message;
+        private readonly QuickFix.Fields.ApplVerID _defaultApplVerId;
 
         public StringField MsgType { get; private set; } = new(-1);
 
@@ -24,8 +25,8 @@ namespace QuickFix
             DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
             _defaultApplVerId = new ApplVerID(defaultApplVerId);
-            _sessionDD = sessionDD;
-            _appDD = appDD;
+            _sessionDict = sessionDD;
+            _appDict = appDD;
             _msgFactory = msgFactory;
             _reusableMessage = new Message();
         }
@@ -35,7 +36,7 @@ namespace QuickFix
             MsgType = Message.IdentifyType(msg, MsgType);
             BeginString = Message.ExtractBeginString(msg, BeginString);
             _message = _reusableMessage.ClearAndInitialize(BeginString.Obj, MsgType.Obj);
-            _message.FromString(msg, validateLengthAndChecksum, _sessionDD, _appDD, _msgFactory);
+            _message.FromString(msg, validateLengthAndChecksum, _sessionDict, _appDict, _msgFactory);
             return _message;
         }
 

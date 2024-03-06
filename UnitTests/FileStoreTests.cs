@@ -1,16 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using System.Threading;
-using QuickFix;
+using QuickFix.Store;
 
 namespace UnitTests
 {
     [TestFixture]
     public class FileStoreTests
     {
-        private IMessageStore _store;
+        private FileStore _store;
         private FileStoreFactory _factory;
 
         private QuickFix.SessionSettings _settings;
@@ -28,14 +28,14 @@ namespace UnitTests
 
             _sessionID = new QuickFix.SessionID("FIX.4.2", "SENDERCOMP", "TARGETCOMP");
 
-            QuickFix.Dictionary config = new QuickFix.Dictionary();
+            QuickFix.SettingsDictionary config = new QuickFix.SettingsDictionary();
             config.SetString(QuickFix.SessionSettings.CONNECTION_TYPE, "initiator");
             config.SetString(QuickFix.SessionSettings.FILE_STORE_PATH, _storeDirectory);
             config.SetString(QuickFix.SessionSettings.ASYNC_FILE_STORE, "Y");
 
             _settings = new QuickFix.SessionSettings();
             _settings.Set(_sessionID, config);
-            _factory = new QuickFix.FileStoreFactory(_settings);
+            _factory = new FileStoreFactory(_settings);
 
             _store = (QuickFix.FileStoreAsync)_factory.Create(_sessionID);
         }
@@ -63,10 +63,10 @@ namespace UnitTests
         public void TestPrefixForSessionWithSubsAndLoc()
         {
             QuickFix.SessionID sessionIDWithSubsAndLocation = new QuickFix.SessionID("FIX.4.2", "SENDERCOMP", "SENDERSUB", "SENDERLOC", "TARGETCOMP", "TARGETSUB", "TARGETLOC");
-            Assert.That(QuickFix.FileStore.Prefix(sessionIDWithSubsAndLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB_SENDERLOC-TARGETCOMP_TARGETSUB_TARGETLOC"));
+            Assert.That(FileStore.Prefix(sessionIDWithSubsAndLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB_SENDERLOC-TARGETCOMP_TARGETSUB_TARGETLOC"));
 
             QuickFix.SessionID sessionIDWithSubsNoLocation = new QuickFix.SessionID("FIX.4.2", "SENDERCOMP", "SENDERSUB", "TARGETCOMP", "TARGETSUB");
-            Assert.That(QuickFix.FileStore.Prefix(sessionIDWithSubsNoLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB-TARGETCOMP_TARGETSUB"));
+            Assert.That(FileStore.Prefix(sessionIDWithSubsNoLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB-TARGETCOMP_TARGETSUB"));
         }
 
         [Test]
@@ -114,6 +114,45 @@ namespace UnitTests
             Assert.AreEqual(2, _store.NextTargetMsgSeqNum);
             RebuildStore();
             Assert.AreEqual(2, _store.NextTargetMsgSeqNum);
+        }
+
+        /// Using UInt64 seqnums per FIX Trading Community Continuous Markets Working Group recommendations.
+        [Test]
+        public void TestSeqNumLimitsForContinuousMarkets()
+        {
+            // Given the next seqnums are UInt64.MaxValue - 1
+            _store.NextSenderMsgSeqNum = System.UInt64.MaxValue - 1;
+            _store.NextTargetMsgSeqNum = _store.NextSenderMsgSeqNum;
+
+            // When the next seqnums are incremented
+            _store.IncrNextSenderMsgSeqNum();
+            _store.IncrNextTargetMsgSeqNum();
+
+            // Then the next seqnums should be UInt64.MaxValue
+            Assert.AreEqual(System.UInt64.MaxValue, _store.NextSenderMsgSeqNum);
+            Assert.AreEqual(System.UInt64.MaxValue, _store.NextTargetMsgSeqNum);
+
+            // When the store is reloaded from files
+            RebuildStore();
+
+            // Then the next seqnums should still be UInt64.MaxValue
+            Assert.AreEqual(System.UInt64.MaxValue, _store.NextSenderMsgSeqNum);
+            Assert.AreEqual(System.UInt64.MaxValue, _store.NextTargetMsgSeqNum);
+
+            // When the next seqnums are incremented again
+            _store.IncrNextSenderMsgSeqNum();
+            _store.IncrNextTargetMsgSeqNum();
+
+            // Then the next seqnums should overflow to zero
+            Assert.AreEqual(0, _store.NextSenderMsgSeqNum);
+            Assert.AreEqual(0, _store.NextTargetMsgSeqNum);
+            
+            // When the store is reloaded from files
+            RebuildStore();
+
+            // Then the next seqnums should still be zero
+            Assert.AreEqual(0, _store.NextSenderMsgSeqNum);
+            Assert.AreEqual(0, _store.NextTargetMsgSeqNum);
         }
 
         [Test]

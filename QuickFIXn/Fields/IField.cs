@@ -1,5 +1,4 @@
-﻿using System.Text;
-
+#nullable enable
 namespace QuickFix.Fields
 {
     /// <summary>

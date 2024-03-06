@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using System.Threading;
-using QuickFix.Fields;
+using QuickFix.Logger;
+using QuickFix.Store;
 
 namespace UnitTests
 {
@@ -175,8 +176,8 @@ namespace UnitTests
         MockApplication application = null;
         QuickFix.Session session = null;
         QuickFix.Session session2 = null;
-        QuickFix.Dictionary config = null;
-        int seqNum = 1;
+        QuickFix.SettingsDictionary config = null;
+        SeqNumType seqNum = 1;
         Regex msRegex = new Regex(@"\.[\d]{1,3}$");
         Regex microsecondRegex = new Regex(@"\.[\d]{1,6}$");
 
@@ -188,23 +189,23 @@ namespace UnitTests
             application = new MockApplication();
             settings = new QuickFix.SessionSettings();
 
-            config = new QuickFix.Dictionary();
+            config = new QuickFix.SettingsDictionary();
             config.SetBool(QuickFix.SessionSettings.PERSIST_MESSAGES, false);
             config.SetString(QuickFix.SessionSettings.CONNECTION_TYPE, "initiator");
             config.SetString(QuickFix.SessionSettings.START_TIME, "00:00:00");
             config.SetString(QuickFix.SessionSettings.END_TIME, "00:00:00");
             settings.Set(sessionID, config);
 
-            var logFactory = new QuickFix.NullLogFactory(); // use QuickFix.ScreenLogFactory(settings) if you need to see output
+            var logFactory = new NullLogFactory(); // use QuickFix.ScreenLogFactory(settings) if you need to see output
 
             // acceptor
-            session = new QuickFix.Session(false, application, new QuickFix.MemoryStoreFactory(), sessionID,
+            session = new QuickFix.Session(false, application, new MemoryStoreFactory(), sessionID,
                 new QuickFix.DataDictionaryProvider(),new QuickFix.SessionSchedule(config), 0, logFactory, new QuickFix.DefaultMessageFactory(), "blah");
             session.SetResponder(responder);
             session.CheckLatency = false;
 
             // initiator
-            session2 = new QuickFix.Session(true, application, new QuickFix.MemoryStoreFactory(), new QuickFix.SessionID("FIX.4.2", "OTHER_SENDER", "OTHER_TARGET"),
+            session2 = new QuickFix.Session(true, application, new MemoryStoreFactory(), new QuickFix.SessionID("FIX.4.2", "OTHER_SENDER", "OTHER_TARGET"),
                 new QuickFix.DataDictionaryProvider(), new QuickFix.SessionSchedule(config), 0, logFactory, new QuickFix.DefaultMessageFactory(), "blah");
             session2.SetResponder(responder);
             session2.CheckLatency = false;
@@ -349,14 +350,14 @@ namespace UnitTests
             session.Next(order.ToString());
         }
 
-        public void SendResendRequest(int begin, int end)
+        public void SendResendRequest(SeqNumType begin, SeqNumType end)
         {
             SendTheMessage(new QuickFix.FIX42.ResendRequest(
                 new QuickFix.Fields.BeginSeqNo(begin),
                 new QuickFix.Fields.EndSeqNo(end)));
         }
 
-        public void SendResendRequest40(int begin, int end)
+        public void SendResendRequest40(SeqNumType begin, SeqNumType end)
         {
             SendTheMessage(new QuickFix.FIX40.ResendRequest(
                 new QuickFix.Fields.BeginSeqNo(begin),
@@ -459,30 +460,30 @@ namespace UnitTests
             order.Header.SetField(new QuickFix.Fields.TargetCompID(sessionID.TargetCompID));
             order.Header.SetField(new QuickFix.Fields.SenderCompID(sessionID.SenderCompID));
 
-            int[] gapStarts = new[] { 1, 5, 11 }; // 1st gap  from seq num 1 to 2 is just the Logon message
-            int[] gapEnds = new[] { 2, 8, 15 };
+            SeqNumType[] gapStarts = new[] { 1UL, 5UL, 11UL }; // 1st gap  from seq num 1 to 2 is just the Logon message
+            SeqNumType[] gapEnds = new[] { 2UL, 8UL, 15UL };
             int orderCount = 0;
 
-            for (int msgSeqNum = gapEnds[0]; msgSeqNum < gapStarts[1]; ++msgSeqNum)
+            for (SeqNumType msgSeqNum = gapEnds[0]; msgSeqNum < gapStarts[1]; ++msgSeqNum)
             {
                 order.Header.SetField(new QuickFix.Fields.MsgSeqNum(msgSeqNum));
                 session.Send(order);
                 ++orderCount;
             } //seq 4, next is 5
 
-            for (int msgSeqNum = gapStarts[1]; msgSeqNum < gapEnds[1]; ++msgSeqNum)
+            for (SeqNumType msgSeqNum = gapStarts[1]; msgSeqNum < gapEnds[1]; ++msgSeqNum)
             {
                 session.GenerateHeartbeat();
             } //seq 7, next is 8
 
-            for (int msgSeqNum = gapEnds[1]; msgSeqNum < gapStarts[2]; ++msgSeqNum)
+            for (SeqNumType msgSeqNum = gapEnds[1]; msgSeqNum < gapStarts[2]; ++msgSeqNum)
             {
                 order.Header.SetField(new QuickFix.Fields.MsgSeqNum(msgSeqNum));
                 session.Send(order);
                 ++orderCount;
             } //seq 10, next is 11
 
-            for (int msgSeqNum = gapStarts[2]; msgSeqNum < gapEnds[2]; ++msgSeqNum)
+            for (SeqNumType msgSeqNum = gapStarts[2]; msgSeqNum < gapEnds[2]; ++msgSeqNum)
             {
                 session.GenerateHeartbeat();
             } // seq 11 - 14
@@ -497,7 +498,7 @@ namespace UnitTests
             foreach (QuickFix.Message sequenceResestMsg in responder.msgLookup[QuickFix.Fields.MsgType.SEQUENCE_RESET])
             {
                 Assert.AreEqual(sequenceResestMsg.GetString(QuickFix.Fields.Tags.GapFillFlag), "Y");
-                Assert.AreEqual(sequenceResestMsg.Header.GetInt(QuickFix.Fields.Tags.MsgSeqNum), gapStarts[++count]);
+                Assert.AreEqual(sequenceResestMsg.Header.GetULong(QuickFix.Fields.Tags.MsgSeqNum), gapStarts[++count]);
                 Assert.AreEqual(sequenceResestMsg.GetInt(QuickFix.Fields.Tags.NewSeqNo), gapEnds[count]);
             }
         }
@@ -655,7 +656,7 @@ namespace UnitTests
             // Logon 
             Logon();
             QuickFix.Message msg = responder.msgLookup[QuickFix.Fields.MsgType.LOGON].Last();
-            int lastSeqNumProcessed = msg.Header.GetInt(QuickFix.Fields.Tags.LastMsgSeqNumProcessed);
+            SeqNumType lastSeqNumProcessed = msg.Header.GetULong(QuickFix.Fields.Tags.LastMsgSeqNumProcessed);
             Assert.That(lastSeqNumProcessed == 1);
 
             // NOS
@@ -673,7 +674,7 @@ namespace UnitTests
             session.Send(order);
 
             msg = responder.msgLookup[QuickFix.Fields.MsgType.NEW_ORDER_D].Last();
-            lastSeqNumProcessed = msg.Header.GetInt(QuickFix.Fields.Tags.LastMsgSeqNumProcessed);
+            lastSeqNumProcessed = msg.Header.GetULong(QuickFix.Fields.Tags.LastMsgSeqNumProcessed);
             Assert.That(lastSeqNumProcessed == 1);
         }
 
@@ -920,8 +921,8 @@ namespace UnitTests
         public void TestApplicationExtension()
         {
             var mockApp = new MockApplicationExt();
-            session = new QuickFix.Session(true, mockApp, new QuickFix.MemoryStoreFactory(), sessionID,
-                new QuickFix.DataDictionaryProvider(), new QuickFix.SessionSchedule(config), 0, new QuickFix.NullLogFactory(), new QuickFix.DefaultMessageFactory(), "blah");
+            session = new QuickFix.Session(true, mockApp, new MemoryStoreFactory(), sessionID,
+                new QuickFix.DataDictionaryProvider(), new QuickFix.SessionSchedule(config), 0, new NullLogFactory(), new QuickFix.DefaultMessageFactory(), "blah");
             session.SetResponder(responder);
             session.CheckLatency = false;
 

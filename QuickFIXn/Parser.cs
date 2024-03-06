@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Utils.Collections;
 
 namespace QuickFix
@@ -8,27 +9,32 @@ namespace QuickFix
     /// </summary>
     public class Parser
     {
-        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new(4, () => new byte[1024]);
-        private static readonly byte[] Message9TagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "9=");
-        private static readonly byte[] MessageChecksumTagWithLeadingSeparator = CharEncoding.DefaultEncoding.GetBytes("\x01" + "10=");
-        private static readonly byte[] MessageBeginStringTag = CharEncoding.DefaultEncoding.GetBytes("8=");
-        private static readonly byte[] MessageSeparatorTag = CharEncoding.DefaultEncoding.GetBytes("\x01");
+        private readonly ProducerConsumerBuffer<byte[]> _producerConsumerBuffer = new(4, () => new byte[512]);
+        private readonly byte[] _seperatorBytes;
+        private readonly byte[] _beginStringBytes;
+        private readonly byte[] _bodyLengthBytes;
+        private readonly byte[] _checkSumBytes;
+        private readonly Encoding _encoding;
 
-        private byte[] buffer_;
-        private int usedBufferLength;
-        private readonly char[] _currentMsg = new char[1024];
-
-        public Parser()
+        private byte[] _buffer;
+        private int _usedBufferLength = 0;
+        private readonly char[] _currentMsg = new char[512];
+        public Parser(Encoding encoding)
         {
-            buffer_ = _producerConsumerBuffer.Dequeue();
+            _encoding = encoding;
+            _beginStringBytes = encoding.GetBytes("8=");
+            _bodyLengthBytes = encoding.GetBytes('\u0001' + "9=");
+            _checkSumBytes = encoding.GetBytes('\u0001' + "10=");
+            _seperatorBytes = encoding.GetBytes("\u0001");
+            _buffer = _producerConsumerBuffer.Dequeue();
         }
 
         private void DoAddToStream(ReadOnlySpan<byte> data, int bytesAdded)
         {
-            if (buffer_.Length < usedBufferLength + bytesAdded)
-                System.Array.Resize<byte>(ref buffer_, (usedBufferLength + bytesAdded));
-            data.CopyTo(buffer_.AsSpan().Slice(usedBufferLength));
-            usedBufferLength += bytesAdded;
+            if (_buffer.Length < _usedBufferLength + bytesAdded)
+                System.Array.Resize<byte>(ref _buffer, (_usedBufferLength + bytesAdded));
+            data.CopyTo(_buffer.AsSpan().Slice(_usedBufferLength));
+            _usedBufferLength += bytesAdded;
         }
 
         public void AddToStream(ReadOnlySpan<byte> data)
@@ -45,12 +51,12 @@ namespace QuickFix
         {
             msg = null;
 
-            if (buffer_.Length < 2)//too short
+            if (_buffer.Length < 2)//too short
                 return false;
 
-            ReadOnlySpan<byte> buf = buffer_.AsSpan();
+            ReadOnlySpan<byte> buf = _buffer.AsSpan();
 
-            var msgStartPos = buf.IndexOf(MessageBeginStringTag);
+            var msgStartPos = buf.IndexOf(_beginStringBytes);
             if (-1 == msgStartPos)//cant find 8= string
                 return false;
 
@@ -61,7 +67,7 @@ namespace QuickFix
 
             try
             {
-                if (!ExtractLength(out innerLength, out totalMsgLength, buffer_, msgStartPos))//get length of message and position of next tag(after 9->length)
+                if (!ExtractLength(out innerLength, out totalMsgLength, _buffer, msgStartPos))//get length of message and position of next tag(after 9->length)
                     return false;
 
 
@@ -69,76 +75,77 @@ namespace QuickFix
                 if (buf.Length < totalMsgLength)
                     return false;//length value was wrong 
 
-                int index = buf.Slice(totalMsgLength - 1).IndexOf(MessageChecksumTagWithLeadingSeparator);//look for checksum tag
+                int index = buf.Slice(totalMsgLength - 1).IndexOf(_checkSumBytes);//look for checksum tag
                 if (-1 == index)
                     return false;
                 totalMsgLength += index + 4;//move to value of 10=
 
-                index = buf.Slice(totalMsgLength).IndexOf(MessageSeparatorTag);//last separator
+                index = buf.Slice(totalMsgLength).IndexOf(_seperatorBytes);//last separator
                 if (-1 == index)
                     return false;//no separator found
                 totalMsgLength += index + 1;
 
-                var totalChars = CharEncoding.DefaultEncoding.GetChars(buffer_, msgStartPos, totalMsgLength, _currentMsg, 0);//cut message to size
+                var totalChars = _encoding.GetChars(_buffer, msgStartPos, totalMsgLength, _currentMsg, 0);//cut message to size
                 msg = _currentMsg.AsSpan(0, totalChars);
-                buffer_ = RemoveAndSwitch(buffer_, totalMsgLength + msgStartPos); //remove message from buffer
+                _buffer = RemoveAndSwitch(_buffer, totalMsgLength + msgStartPos); //remove message from buffer
                 return true;
             }
             catch (MessageParseError e)
             {
-                if ((innerLength > 0) && (totalMsgLength + msgStartPos) <= buffer_.Length)
-                    buffer_ = RemoveAndSwitch(buffer_, (totalMsgLength + msgStartPos));
+                if ((innerLength > 0) && (totalMsgLength + msgStartPos) <= _buffer.Length)
+                    _buffer = RemoveAndSwitch(_buffer, (totalMsgLength + msgStartPos));
                 else
-                    buffer_ = RemoveAndSwitch(buffer_, buffer_.Length);
+                    _buffer = RemoveAndSwitch(_buffer, _buffer.Length);
                 throw e;
             }
         }
 
-        public bool ExtractLength(out int length, out int pos, string buf)
+        public bool ExtractLength(out int bodyLength, out int bytesConsumed, string buf)
         {
-            return ExtractLength(out length, out pos, CharEncoding.DefaultEncoding.GetBytes(buf), 0);
+            return ExtractLength(out bodyLength, out bytesConsumed, _encoding.GetBytes(buf), 0);
         }
 
-        private static bool ExtractLength(out int lengthValue, out int pos, byte[] buffer, int offset)
+        private bool ExtractLength(out int bodyLength, out int bytesConsumed, byte[] buffer, int offset)
         {
-            lengthValue = 0;
-            pos = 0;
+            bodyLength = 0;
+            bytesConsumed = 0;
+
             ReadOnlySpan<byte> buf = buffer.AsSpan().Slice(offset);
 
             if (buf.Length < 1)
                 return false;
-            int startPos = buf.IndexOf(Message9TagWithLeadingSeparator);
+            int startPos = buf.IndexOf(_bodyLengthBytes);
             if (-1 == startPos)
                 return false;
             startPos += 3;
 
-            int endPos = buf.Slice(startPos).IndexOf(MessageSeparatorTag);
+            int endPos = buf.Slice(startPos).IndexOf(_seperatorBytes);
             if (-1 == endPos)
                 return false;
 
-            string strLength = CharEncoding.DefaultEncoding.GetString(buffer, startPos + offset, endPos);
+            string strLength = _encoding.GetString(buffer, startPos + offset, endPos);
             try
             {
-                lengthValue = Fields.Converters.IntConverter.Convert(strLength);
-                if (lengthValue < 0)
-                    throw new MessageParseError("Invalid BodyLength (" + lengthValue + ")");
+                bodyLength = Fields.Converters.IntConverter.Convert(strLength);
+                if (bodyLength < 0)
+                    throw new MessageParseError("Invalid BodyLength (" + bodyLength + ")");
             }
             catch (FieldConvertError e)
             {
                 throw new MessageParseError(e.Message, e);
             }
 
-            pos = startPos + endPos + 1;
+            bytesConsumed = startPos + endPos + 1;
             return true;
         }
 
         private byte[] RemoveAndSwitch(byte[] array, int offset)
         {
             byte[] returnByte = _producerConsumerBuffer.Dequeue();
-            var copyCount = Math.Max(0, usedBufferLength - offset);
+            var copyCount = Math.Max(0, _usedBufferLength - offset);
             System.Buffer.BlockCopy(array, offset, returnByte, 0, copyCount);
-            Array.Clear(array, 0, usedBufferLength);
-            usedBufferLength = copyCount;
+            Array.Clear(array, 0, _usedBufferLength);
+            _usedBufferLength = copyCount;
             _producerConsumerBuffer.Enqueue(array);
             return returnByte;
         }
