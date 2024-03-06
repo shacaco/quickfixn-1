@@ -1,77 +1,87 @@
-﻿#nullable enable
+﻿using QuickFix.Store;
 using System;
 using System.Collections.Generic;
 
-namespace QuickFix.Store;
-
-/// <summary>
-/// In-memory message store implementation
-/// </summary>
-public class MemoryStore : IMessageStore
+namespace QuickFix
 {
-    private readonly Dictionary<SeqNumType, string> _messages;
-
-    public MemoryStore()
+    /// <summary>
+    /// In-memory message store implementation
+    /// </summary>
+    public class MemoryStore : IMessageStore
     {
-        _messages = new Dictionary<SeqNumType, string>();
-        Reset();
-    }
+        #region Private Members
 
-    public void Get(SeqNumType begSeqNo, SeqNumType endSeqNo, List<string> messages)
-    {
-        for (SeqNumType current = begSeqNo; current <= endSeqNo; current++)
+        internal System.Collections.Generic.Dictionary<SeqNumType, string> Messages { get; private set; }
+        private DateTime? _creationTime;
+
+        #endregion
+
+        public MemoryStore()
         {
-            if (_messages.TryGetValue(current, out var message))
-                messages.Add(message);
+            Messages = new System.Collections.Generic.Dictionary<SeqNumType, string>();
+            Reset();
         }
-    }
 
-    #region MessageStore Members
-
-    public bool Set(SeqNumType msgSeqNum, string msg)
-    {
-        _messages[msgSeqNum] = msg;
-        return true;
-    }
-
-    public SeqNumType NextSenderMsgSeqNum { get; set; }
-    public SeqNumType NextTargetMsgSeqNum { get; set; }
-
-    public void IncrNextSenderMsgSeqNum()
-    { ++NextSenderMsgSeqNum; }
-
-    public void IncrNextTargetMsgSeqNum()
-    { ++NextTargetMsgSeqNum; }
-
-    public DateTime? CreationTime { get; internal set; }
-
-    public void Reset()
-    {
-        NextSenderMsgSeqNum = 1;
-        NextTargetMsgSeqNum = 1;
-        _messages.Clear();
-        CreationTime = DateTime.UtcNow;
-    }
-
-    public void Refresh()
-    { }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    private bool _disposed = false;
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed) return;
-        if (disposing)
+        public void Get(SeqNumType begSeqNo, SeqNumType endSeqNo, List<string> messages)
         {
-            _messages.Clear();
+            for (SeqNumType current = begSeqNo; current <= endSeqNo; current++)
+            {
+                if (Messages.ContainsKey(current))
+                    messages.Add(Messages[current]);
+            }
         }
-        _disposed = true;
-    }
 
-    ~MemoryStore() => Dispose(false);
-    #endregion
+        #region MessageStore Members
+
+        public bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg)
+        {
+            Messages[msgSeqNum] = msg.ToString();
+            return true;
+        }
+
+        public SeqNumType NextSenderMsgSeqNum { get; set; }
+        public SeqNumType NextTargetMsgSeqNum { get; set; }
+
+        public void IncrNextSenderMsgSeqNum()
+        { ++NextSenderMsgSeqNum; }
+
+        public void IncrNextTargetMsgSeqNum()
+        { ++NextTargetMsgSeqNum; }
+
+        public System.DateTime? CreationTime
+        {
+            get { return _creationTime; }
+            internal set { _creationTime = value; }
+        }
+
+        public void Reset()
+        {
+            NextSenderMsgSeqNum = 1;
+            NextTargetMsgSeqNum = 1;
+            Messages.Clear();
+            _creationTime = DateTime.UtcNow;
+        }
+
+        public void Refresh()
+        { }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private bool _disposed = false;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                Messages = null;
+            }
+            _disposed = true;
+        }
+
+        ~MemoryStore() => Dispose(false);
+        #endregion
+    }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using QuickFix.Fields;
 using QuickFix.Util;
 using Utils;
 
@@ -39,13 +40,13 @@ namespace QuickFix.Store
         private StreamWriter seqNumsWriter_;
         private readonly byte[] _writeBuffer = new byte[1024];
         private MemoryStore cache_ = new MemoryStore();
-        private Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
+        private Dictionary<SeqNumType, MsgDef> offsets_ = new Dictionary<SeqNumType, MsgDef>();
 
         private bool _abortTask;
 
         private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
         private string _lastSequence;
-        private ConcurrentQueue<ValueTuple<string, int>> _setsToWrite = new ConcurrentQueue<ValueTuple<string, int>>();
+        private ConcurrentQueue<ValueTuple<string, SeqNumType>> _setsToWrite = new ConcurrentQueue<ValueTuple<string, SeqNumType>>();
         private readonly StringBuilder SeqMsgBuffer = new StringBuilder(0.ToString("D10") + " : " + 0.ToString("D10") + " ");
         private readonly StringBuilder _setBuffer = new StringBuilder();
         private readonly Thread _setThread;
@@ -140,7 +141,7 @@ namespace QuickFix.Store
                         string[] headerParts = line.Split(',');
                         if (headerParts.Length == 3)
                         {
-                            offsets_[Convert.ToInt32(headerParts[0])] = new MsgDef(
+                            offsets_[Convert.ToUInt64(headerParts[0])] = new MsgDef(
                                 Convert.ToInt64(headerParts[1]), Convert.ToInt32(headerParts[2]));
                         }
                     }
@@ -154,8 +155,8 @@ namespace QuickFix.Store
                     string[] parts = seqNumReader.ReadToEnd().Split(':');
                     if (parts.Length == 2)
                     {
-                        cache_.NextSenderMsgSeqNum = Convert.ToInt32(parts[0]);
-                        cache_.NextTargetMsgSeqNum = Convert.ToInt32(parts[1]);
+                        cache_.NextSenderMsgSeqNum = Convert.ToUInt64(parts[0]);
+                        cache_.NextTargetMsgSeqNum = Convert.ToUInt64(parts[1]);
                     }
                 }
             }
@@ -188,10 +189,10 @@ namespace QuickFix.Store
         /// <param name="startSeqNum"></param>
         /// <param name="endSeqNum"></param>
         /// <param name="messages"></param>
-        public void Get(int startSeqNum, int endSeqNum, List<string> messages)
+        public void Get(SeqNumType startSeqNum, SeqNumType endSeqNum, List<string> messages)
         {
             lock (_lock)
-                for (int i = startSeqNum; i <= endSeqNum; i++)
+                for (ulong i = startSeqNum; i <= endSeqNum; i++)
                 {
                     if (offsets_.ContainsKey(i))
                     {
@@ -210,14 +211,14 @@ namespace QuickFix.Store
         /// <param name="msgSeqNum"></param>
         /// <param name="msg"></param>
         /// <returns></returns>
-        public bool Set(int msgSeqNum, ReadOnlySpan<char> msg)
+        public bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg)
         {
             _setsToWrite.Enqueue((msg.ToString(), msgSeqNum));
             _autoResetEvent.Set();
             return true;
         }
 
-        public int NextSenderMsgSeqNum
+        public ulong NextSenderMsgSeqNum
         {
             get { return cache_.NextSenderMsgSeqNum; }
             set
@@ -227,7 +228,7 @@ namespace QuickFix.Store
             }
         }
 
-        public int NextTargetMsgSeqNum
+        public ulong NextTargetMsgSeqNum
         {
             get { return cache_.NextTargetMsgSeqNum; }
             set

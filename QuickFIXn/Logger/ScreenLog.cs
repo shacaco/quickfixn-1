@@ -33,7 +33,7 @@ public class ScreenLog : ILog
 
         lock (_sync)
         {
-            System.Console.WriteLine("<incoming> " + msg.ToString().Replace(Message.Message.SOH, '|'));
+            System.Console.WriteLine("<incoming> " + msg.ToString().Replace(Message.Message.SohChar, '|'));
         }
     }
 
@@ -44,7 +44,7 @@ public class ScreenLog : ILog
 
         lock (_sync)
         {
-            System.Console.WriteLine("<outgoing> " + msg.ToString().Replace(Message.Message.SOH, '|'));
+            System.Console.WriteLine("<outgoing> " + msg.ToString().Replace(Message.Message.SohChar, '|'));
         }
     }
 

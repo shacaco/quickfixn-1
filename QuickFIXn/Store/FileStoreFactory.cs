@@ -1,6 +1,6 @@
 ﻿#nullable enable
-
-namespace QuickFix.Store;
+using QuickFix;
+using QuickFix.Store;
 
 /// <summary>
 /// Creates a message store that stores messages in a file

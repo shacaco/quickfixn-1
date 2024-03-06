@@ -560,7 +560,7 @@ namespace QuickFix
             _groups.Clear();
             RepeatedTags?.Clear();
             ReusableFields.ResetCounters();
-            _fieldOrder = null;
+            FieldOrder = Array.Empty<int>();
         }
 
         /// <summary>
@@ -647,7 +647,7 @@ namespace QuickFix
                 var preField = preFields[i];
                 if (IsSetField(preField))
                 {
-                    _fields[preField].AppendFieldAsStringTo(sb).Append(Message.Message.SOH);
+                    _fields[preField].AppendFieldAsStringTo(sb).Append(Message.Message.SohChar);
                     if (_groupCounterTags.Contains(preField))
                     {
                         List<Group> glist = _groups[preField];
@@ -665,7 +665,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    field.Value.AppendFieldAsStringTo(sb).Append(Message.Message.SOH);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.Message.SohChar);
                 }
             }
             else
@@ -676,7 +676,7 @@ namespace QuickFix
                         continue;
                     if (preFields.Contains(field.Value.Tag))
                         continue; //already did this one
-                    field.Value.AppendFieldAsStringTo(sb).Append(Message.Message.SOH);
+                    field.Value.AppendFieldAsStringTo(sb).Append(Message.Message.SohChar);
                 }
             }
 
@@ -689,7 +689,7 @@ namespace QuickFix
                 if (groupList.Count == 0)
                     continue; //probably unnecessary, but it doesn't hurt to check
            
-                _fields[counterTag.Key].AppendFieldAsStringTo(sb).Append(Message.Message.SOH);
+                _fields[counterTag.Key].AppendFieldAsStringTo(sb).Append(Message.Message.SohChar);
 
                 foreach (Group group in groupList)
                     group.CalculateString(true, sb);
