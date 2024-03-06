@@ -291,15 +291,7 @@ namespace QuickFix.Message
 
         #endregion
 
-        public bool FromStringHeader(ReadOnlySpan<char> msg)
-        {
-            _invalidField = 0;
-            Header.Clear();
-            base.Clear();
-            Trailer.Clear();
-        }
-
-        private void PopulateHeaderFromMessageString(string msgstr)
+        private void FromStringHeader(string msgstr)
         {
             Clear();
 
@@ -307,17 +299,18 @@ namespace QuickFix.Message
             int count = 0;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msg, ref pos);
+                StringField f = ExtractField(msgstr, ref pos);
 
-                if ((count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
-                    return false;
+                if (count < 3 && Header.HEADER_FIELD_ORDER[count++] != f.Tag)
+                    return;
 
                 if (IsHeaderField(f.Tag))
-                    this.Header.SetField(f, false);
+                    Header.SetField(f, false);
                 else
                     break;
             }
         }
+
 
         /// <summary>
         /// Creates a Message from a FIX string
@@ -365,6 +358,7 @@ namespace QuickFix.Message
             bool ignoreBody)
         {
             Clear();
+            this.ApplicationDataDictionary = appDD;
 
             bool expectingHeader = true;
             bool expectingBody = true;
@@ -378,7 +372,7 @@ namespace QuickFix.Message
                 if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
                     throw new InvalidMessage("Header fields out of order");
 
-                if (IsHeaderField(f.Tag, transportDict))
+                if (IsHeaderField(f.Tag, sessionDD))
                 {
                     if (!expectingHeader)
                     {
@@ -390,7 +384,7 @@ namespace QuickFix.Message
                     if (Tags.MsgType.Equals(f.Tag))
                     {
                         if (appDD != null)
-                            if (appDict is not null)
+                            if (appDD is not null)
                             {
                                 msgMap = appDD.GetMapForMessage(f.ToString());
                             }
@@ -399,21 +393,21 @@ namespace QuickFix.Message
                     if (!Header.SetField(f, false))
                         Header.RepeatedTags.Add(f);
 
-                    if (transportDict is not null && transportDict.Header.IsGroup(f.Tag))
+                    if (sessionDD is not null && sessionDD.Header.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, Header, transportDict.Header.GetGroupSpec(f.Tag), msgFactory);
+                        pos = SetGroup(f, msgstr, pos, Header, sessionDD.Header.GetGroupSpec(f.Tag), sessionDD, appDD, msgFactory);
                     }
                 }
-                else if (IsTrailerField(f.Tag, transportDict))
+                else if (IsTrailerField(f.Tag, sessionDD))
                 {
                     expectingHeader = false;
                     expectingBody = false;
                     if (!Trailer.SetField(f, false))
                         Trailer.RepeatedTags.Add(f);
 
-                    if (transportDict is not null && transportDict.Trailer.IsGroup(f.Tag))
+                    if (sessionDD is not null && sessionDD.Trailer.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, Trailer, transportDict.Trailer.GetGroup(f.Tag), msgFactory);
+                        pos = SetGroup(f, msgstr, pos, Trailer, sessionDD.Trailer.GetGroup(f.Tag), sessionDD, appDD, msgFactory);
                     }
                 }
                 else if (ignoreBody == false)
@@ -433,7 +427,7 @@ namespace QuickFix.Message
 
                     if (msgMap is not null && msgMap.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), msgFactory);
+                        pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), sessionDD, appDD, msgFactory);
                     }
                 }
             }
@@ -541,7 +535,7 @@ namespace QuickFix.Message
             StringField grpNoFld, ReadOnlySpan<char> msg, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
             DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
         {
-            int grpEntryDelimiterTag = groupSpec.Delim;
+            int grpEntryDelimiterTag = groupDD.Delim;
             int grpPos = pos;
             Group? grp = null; // the group entry being constructed
 
@@ -567,7 +561,7 @@ namespace QuickFix.Message
                     if (grp == null)
                         grp = new Group(grpNoFld.Tag, grpEntryDelimiterTag);
                 }
-                else if (!groupSpec.IsField(f.Tag))
+                else if (!groupDD.IsField(f.Tag))
                 {
                     // This field is not in the group, thus the repeating group is done.
                     if (grp is not null)
@@ -822,14 +816,14 @@ namespace QuickFix.Message
 
         internal Message ClearAndInitialize(string beginString, string msgType)
         {
-            field_ = 0;
+            _invalidField = 0;
             this.Header.Clear();
             this.Header.SetWithReusableField(Tags.BeginString, beginString);
             this.Header.SetWithReusableField(Tags.MsgType, msgType);
 
             base.Clear();
             this.Trailer.Clear();
-            validStructure_ = true;
+            _isValid = true;
             return this;
         }
 

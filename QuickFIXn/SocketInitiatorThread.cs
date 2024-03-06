@@ -84,7 +84,7 @@ namespace QuickFix
             {
                 int bytesRead = ReadSome(_readBuffer, 1000);
                 if (bytesRead > 0)
-                    parser_.AddToStream(readBuffer_.AsSpan().Slice(0, bytesRead));
+                    _parser.AddToStream(_readBuffer.AsSpan().Slice(0, bytesRead));
                 else
                     Session.Next();
 
@@ -177,7 +177,7 @@ namespace QuickFix
                 throw new ApplicationException("Initiator is not connected (uninitialized stream)");
             }
             var length = CharEncoding.DefaultEncoding.GetBytes(data, _sendBytes);
-            stream_.Write(_sendBytes, 0, length);
+            _stream.Write(_sendBytes, 0, length);
             return true;
         }
 

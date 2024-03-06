@@ -65,7 +65,7 @@ namespace QuickFix
 
         public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
         {
-            var result = CalculateString(sb ?? new StringBuilder(128), _fieldOrder ?? new int[] { _delim }, orderPostFieldOrder);// 802 shouldn't be in _fieldOrder
+            var result = CalculateString(sb ?? new StringBuilder(128), FieldOrder ?? new int[] { Delim }, orderPostFieldOrder);// 802 shouldn't be in _fieldOrder
             return result;
         }
 

@@ -23,7 +23,7 @@ namespace QuickFix
             emptyDataDictionary_ = new DataDictionary.DataDictionary(src.emptyDataDictionary_);
         }
 
-        public void SetSettings(Dictionary settings)
+        public void SetSettings(SettingsDictionary settings) 
         {
             if (settings.Has(SessionSettings.VALIDATE_FIELDS_OUT_OF_ORDER))
                 emptyDataDictionary_.CheckFieldsOutOfOrder = settings.GetBool(SessionSettings.VALIDATE_FIELDS_OUT_OF_ORDER);
