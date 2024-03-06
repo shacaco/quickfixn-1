@@ -48,6 +48,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuickFix.FIXT11", "Messages
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AcceptanceTest", "AcceptanceTest\AcceptanceTest.csproj", "{A6E267D7-CF1E-4C28-BB72-8F004E4375FC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DDTool", "DDTool\DDTool\DDTool.csproj", "{1BA91650-7158-46D6-B245-D72F6C515436}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -192,6 +194,14 @@ Global
 		{A6E267D7-CF1E-4C28-BB72-8F004E4375FC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A6E267D7-CF1E-4C28-BB72-8F004E4375FC}.Release|x64.ActiveCfg = Release|Any CPU
 		{A6E267D7-CF1E-4C28-BB72-8F004E4375FC}.Release|x64.Build.0 = Release|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Debug|x64.Build.0 = Debug|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Release|x64.ActiveCfg = Release|Any CPU
+		{1BA91650-7158-46D6-B245-D72F6C515436}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
