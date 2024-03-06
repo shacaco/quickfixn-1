@@ -16,13 +16,13 @@ public interface ILog : IDisposable
     /// Logs an incoming message
     /// </summary>
     /// <param name="msg">a raw FIX message</param>
-    void OnIncoming(string msg);
+    void OnIncoming(ReadOnlySpan<char> msg);
 
     /// <summary>
     /// Logs an outgoing message
     /// </summary>
     /// <param name="msg">a raw FIX message</param>
-    void OnOutgoing(string msg);
+    void OnOutgoing(ReadOnlySpan<char> msg);
 
     /// <summary>
     /// Logs a session event

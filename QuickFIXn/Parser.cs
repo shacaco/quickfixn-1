@@ -19,6 +19,10 @@ namespace QuickFix
         private byte[] _buffer;
         private int _usedBufferLength = 0;
         private readonly char[] _currentMsg = new char[512];
+
+        public Parser() : this(CharEncoding.DefaultEncoding)
+        { }
+
         public Parser(Encoding encoding)
         {
             _encoding = encoding;

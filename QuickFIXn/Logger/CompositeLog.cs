@@ -24,14 +24,14 @@ internal class CompositeLog : ILog
             log.Clear();
     }
 
-    public void OnIncoming(string msg)
+    public void OnIncoming(ReadOnlySpan<char> msg)
     {
         DisposedCheck();
         foreach (var log in _logs)
             log.OnIncoming(msg);
     }
 
-    public void OnOutgoing(string msg)
+    public void OnOutgoing(ReadOnlySpan<char> msg)
     {
         DisposedCheck();
         foreach (var log in _logs)

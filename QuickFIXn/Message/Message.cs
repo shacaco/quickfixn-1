@@ -3,69 +3,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using QuickFix.Fields;
 using System.Text.Json;
-using System.Collections.Generic;
 using QuickFix.DataDictionary;
+using QuickFix.Fields;
 using DD = QuickFix.DataDictionary.DataDictionary;
 
-namespace QuickFix
+namespace QuickFix.Message
 {
-    public class Header : FieldMap
-    {
-        public int[] HEADER_FIELD_ORDER = { Tags.BeginString, Tags.BodyLength, Tags.MsgType };
-
-        public Header()
-            : base(new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5))
-        { }
-
-        public Header(Header src)
-            : base(src)
-        { }
-
-        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
-        {
-            var result = CalculateString(sb ?? new StringBuilder(64), HEADER_FIELD_ORDER, orderPostFieldOrder);
-            return result;
-        }
-
-        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
-        {
-            return base.CalculateString(sb, HEADER_FIELD_ORDER, orderPostFieldOrder);
-        }
-    }
-
-    public class Trailer : FieldMap
-    {
-        public int[] TRAILER_FIELD_ORDER = { Tags.SignatureLength, Tags.Signature, Tags.CheckSum };
-
-        public Trailer()
-            : base(new ReusableFields.ReusableFieldsLengths(5,5,5,5,5,5))
-        { }
-
-        public Trailer(Trailer src)
-            : base(src)
-        { }
-
-        public override StringBuilder CalculateString(bool orderPostFieldOrder, StringBuilder sb)
-        {
-            var result = base.CalculateString(sb ?? new StringBuilder(64), TRAILER_FIELD_ORDER, orderPostFieldOrder);
-            return result;
-        }
-
-        public override StringBuilder CalculateString(StringBuilder sb, int[] preFields, bool orderPostFieldOrder)
-        {
-            return base.CalculateString(sb, TRAILER_FIELD_ORDER, orderPostFieldOrder);
-        }
-    }
-
     /// <summary>
     /// Represents a FIX message
     /// </summary>
     public class Message : FieldMap
     {
         private static readonly string MSG_TYPE_STRING = $"{SOH}35=";
-        public const string SOH = "\u0001";
+        public const char SOH = '\u0001';
 
         public const string Equal = "=";
         protected readonly StringBuilder _toStringBuilder = new StringBuilder(512);
@@ -74,26 +25,21 @@ namespace QuickFix
         /// If message is invalid, then this is set to the tag that caused it
         /// </summary>
         private int _invalidField = 0;
-
         private bool _isValid = false;
 
         public Header Header { get; }
         public Trailer Trailer { get; }
+        public DataDictionary.DataDictionary? ApplicationDataDictionary { get; private set; }
 
         #region Constructors
 
-        public Message() : base(new ReusableFields.ReusableFieldsLengths(30,10,10,10,10,10))
+        public Message() : base(
+            new ReusableFields.ReusableFieldsLengths(30, 10, 10, 10, 10, 10))
         {
             Header = new Header();
             Trailer = new Trailer();
             _isValid = true;
         }
-
-        public Message(
-            string msgStr,
-            bool validate = true)
-            : this(msgStr, null, null, validate)
-        { }
 
         public Message(string msgstr, bool validate)
             : this(msgstr, null, null, validate)
@@ -112,9 +58,9 @@ namespace QuickFix
             this.ApplicationDataDictionary = appDD;
             FromStringHeader(msgstr);
             if (IsAdmin())
-                FromString(msgstr, validate, sessionDataDictionary, sessionDataDictionary, null);
+                FromString(msgstr, validate, sessionDataDictionary, appDD, null);
             else
-                FromString(msgstr, validate, transportDict, appDict, null, false);
+                FromString(msgstr, validate, sessionDataDictionary, appDD, null, false);
         }
 
         public Message(Message src)
@@ -125,6 +71,8 @@ namespace QuickFix
             _isValid = src._isValid;
             _invalidField = src._invalidField;
         }
+
+        #endregion
 
         #region Static Methods
 
@@ -149,20 +97,13 @@ namespace QuickFix
 
         public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
         {
-            int tagend = msgstr.IndexOf('=', pos);
-            int tag = Convert.ToInt32(msgstr.Substring(pos, tagend - pos));
-            return tag;
-        }
-
-        public static StringField ExtractDataField(string msgstr, int dataLength, ref int pos)
-        {
             try
             {
                 int tagLength = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal);
                 int tag = int.Parse(msg.Slice(pos, tagLength));
                 pos += tagLength + 1;
                 int fieldValueLength = msg.Slice(pos).IndexOf(SOH, StringComparison.Ordinal);
-                field ??= new StringField(-1);    
+                field ??= new StringField(-1);
                 field.Set(tag, msg.Slice(pos, fieldValueLength).ToString());
 
                 pos += fieldValueLength + 1;
@@ -448,10 +389,10 @@ namespace QuickFix
                     if (Tags.MsgType.Equals(f.Tag))
                     {
                         if (appDD != null)
-                        if (appDict is not null)
-                        {
-                            msgMap = appDD.GetMapForMessage(f.ToString());
-                        }
+                            if (appDict is not null)
+                            {
+                                msgMap = appDD.GetMapForMessage(f.ToString());
+                            }
                     }
 
                     if (!Header.SetField(f, false))
@@ -489,7 +430,7 @@ namespace QuickFix
                         RepeatedTags.Add(f);
                     }
 
-                    if(msgMap is not null && msgMap.IsGroup(f.Tag))
+                    if (msgMap is not null && msgMap.IsGroup(f.Tag))
                     {
                         pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), msgFactory);
                     }
@@ -518,18 +459,20 @@ namespace QuickFix
         {
             Clear();
 
-            using (JsonDocument document = JsonDocument.Parse(json)) {
+            using (JsonDocument document = JsonDocument.Parse(json))
+            {
                 string? beginString = document.RootElement.GetProperty("Header").GetProperty("BeginString").GetString();
-                string? msgType     = document.RootElement.GetProperty("Header").GetProperty("MsgType").GetString();
+                string? msgType = document.RootElement.GetProperty("Header").GetProperty("MsgType").GetString();
 
-                if (beginString is null || msgType is null) {
+                if (beginString is null || msgType is null)
+                {
                     throw new ArgumentException(
                         $"JSON message has invalid/missing beginString ({beginString}) and/or msgType ({msgType})");
                 }
 
                 IFieldMapSpec msgMap = appDict.GetMapForMessage(msgType);
-                FromJson(document.RootElement.GetProperty("Header"),  beginString, msgType, msgMap, msgFactory, transportDict, Header);
-                FromJson(document.RootElement.GetProperty("Body"),    beginString, msgType, msgMap, msgFactory, appDict, this);
+                FromJson(document.RootElement.GetProperty("Header"), beginString, msgType, msgMap, msgFactory, transportDict, Header);
+                FromJson(document.RootElement.GetProperty("Body"), beginString, msgType, msgMap, msgFactory, appDict, this);
                 FromJson(document.RootElement.GetProperty("Trailer"), beginString, msgType, msgMap, msgFactory, transportDict, Trailer);
             }
 
@@ -662,7 +605,8 @@ namespace QuickFix
         /// </summary>
         /// <param name="problemField">If invalid, then this is set to the field that is the problem</param>
         /// <returns></returns>
-        public bool HasValidStructure(out int problemField) {
+        public bool HasValidStructure(out int problemField)
+        {
             problemField = _isValid ? 0 : _invalidField;
             return _isValid;
         }
@@ -908,7 +852,7 @@ namespace QuickFix
         {
             lock (lock_ToString)
             {
-               return ToStringBuilder(orderBodyPostFieldOrder).ToString();
+                return ToStringBuilder(orderBodyPostFieldOrder).ToString();
             }
         }
 
@@ -943,14 +887,14 @@ namespace QuickFix
             // fields
             foreach (var f in fields.OrderBy(i => i.Key))
             {
-               s.Append("<field ");
-               if (dd is not null && dd.FieldsByTag.TryGetValue(f.Key, out var value))
-               {
-                   s.Append("name=\"" + value.Name + "\" ");
-               }
-               s.Append("number=\"" + f.Key + "\">");
-               s.Append("<![CDATA[" + f.Value + "]]>");
-               s.Append("</field>");
+                s.Append("<field ");
+                if (dd is not null && dd.FieldsByTag.TryGetValue(f.Key, out var value))
+                {
+                    s.Append("name=\"" + value.Name + "\" ");
+                }
+                s.Append("number=\"" + f.Key + "\">");
+                s.Append("<![CDATA[" + f.Value + "]]>");
+                s.Append("</field>");
             }
             // now groups
             List<int> groupTags = fields.GetGroupTags();
@@ -992,7 +936,8 @@ namespace QuickFix
                 if (dd is not null && dd.FieldsByTag.ContainsKey(field.Tag))
                 {
                     sb.Append("\"" + dd.FieldsByTag[field.Tag].Name + "\":");
-                    if (humanReadableValues) {
+                    if (humanReadableValues)
+                    {
                         if (dd.FieldsByTag[field.Tag].EnumDict.TryGetValue(field.ToString(), out var valueDescription))
                         {
                             sb.Append("\"" + valueDescription + "\",");
@@ -1013,7 +958,7 @@ namespace QuickFix
             }
 
             // Group Fields
-            foreach(IField numInGroupField in numInGroupFieldList)
+            foreach (IField numInGroupField in numInGroupFieldList)
             {
                 // The name of the NumInGroup field is the key of the JSON list containing the Group items
                 if (dd is not null && dd.FieldsByTag.ContainsKey(numInGroupField.Tag))
@@ -1080,8 +1025,8 @@ namespace QuickFix
         public string ToJSON(DD? dataDictionary = null, bool humanReadableValues = false)
         {
             StringBuilder sb = new StringBuilder().Append("{").Append("\"Header\":{");
-            FieldMapToJSON(sb, dataDictionary, Header,  humanReadableValues).Append("},\"Body\":{");
-            FieldMapToJSON(sb, dataDictionary, this,    humanReadableValues).Append("},\"Trailer\":{");
+            FieldMapToJSON(sb, dataDictionary, Header, humanReadableValues).Append("},\"Body\":{");
+            FieldMapToJSON(sb, dataDictionary, this, humanReadableValues).Append("},\"Trailer\":{");
             FieldMapToJSON(sb, dataDictionary, Trailer, humanReadableValues).Append("}}");
             return sb.ToString();
         }

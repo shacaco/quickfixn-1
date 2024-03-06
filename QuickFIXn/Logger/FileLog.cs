@@ -89,23 +89,23 @@ public class FileLog : ILog
         }
     }
 
-    public void OnIncoming(string msg)
+    public void OnIncoming(ReadOnlySpan<char> msg)
     {
         DisposedCheck();
 
         lock (_sync)
         {
-            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg);
+            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg.ToString());
         }
     }
 
-    public void OnOutgoing(string msg)
+    public void OnOutgoing(ReadOnlySpan<char> msg)
     {
         DisposedCheck();
 
         lock (_sync)
         {
-            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg);
+            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg.ToString());
         }
     }
 

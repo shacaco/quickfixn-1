@@ -6,12 +6,12 @@ using QuickFix.Fields.Converters;
 using Utils;
 using Utils.Collections;
 
-namespace QuickFix
+namespace QuickFix.Logger
 {
     /// <summary>
     /// File log implementation
     /// </summary>
-    public class FileLogAsync : ILog, System.IDisposable
+    public class FileLogAsync : ILog, IDisposable
     {
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private const char NullChar = '\0';
@@ -86,7 +86,7 @@ namespace QuickFix
         private void DisposedCheck()
         {
             if (_disposed)
-                throw new System.ObjectDisposedException(this.GetType().Name);
+                throw new ObjectDisposedException(GetType().Name);
         }
 
         #region Log Members

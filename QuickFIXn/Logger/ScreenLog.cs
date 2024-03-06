@@ -1,5 +1,7 @@
 ﻿#nullable enable
 
+using System;
+
 namespace QuickFix.Logger;
 
 /// <summary>
@@ -24,25 +26,25 @@ public class ScreenLog : ILog
     public void Clear()
     { }
 
-    public void OnIncoming(string msg)
+    public void OnIncoming(ReadOnlySpan<char> msg)
     {
         if (!_logIncoming)
             return;
 
         lock (_sync)
         {
-            System.Console.WriteLine("<incoming> " + msg.Replace(Message.SOH, '|'));
+            System.Console.WriteLine("<incoming> " + msg.ToString().Replace(Message.Message.SOH, '|'));
         }
     }
 
-    public void OnOutgoing(string msg)
+    public void OnOutgoing(ReadOnlySpan<char> msg)
     {
         if (!_logOutgoing)
             return;
 
         lock (_sync)
         {
-            System.Console.WriteLine("<outgoing> " + msg.Replace(Message.SOH, '|'));
+            System.Console.WriteLine("<outgoing> " + msg.ToString().Replace(Message.Message.SOH, '|'));
         }
     }
 

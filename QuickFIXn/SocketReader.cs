@@ -44,7 +44,7 @@ namespace QuickFix
             {
                 int bytesRead = ReadSome(_readBuffer, 1000);
                 if (bytesRead > 0)
-                    parser_.AddToStream(readBuffer_.AsSpan().Slice(0, bytesRead));
+                    _parser.AddToStream(_readBuffer.AsSpan().Slice(0, bytesRead));
                 else
                     _qfSession?.Next();
 
@@ -120,7 +120,7 @@ namespace QuickFix
                 if (_qfSession is null)
                 {
                    var msgString = msg.ToString();
-                    _qfSession = Session.LookupSession(Message.GetReverseSessionId(msgString));
+                    _qfSession = Session.LookupSession(Message.Message.GetReverseSessionId(msgString));
                     if (_qfSession is null || IsAssumedSession(_qfSession.SessionID))
                     
                     {
@@ -166,7 +166,7 @@ namespace QuickFix
         {
             try
             {
-                if (Fields.MsgType.LOGON.Equals(Message.GetMsgType(msg)))
+                if (Fields.MsgType.LOGON.Equals(Message.Message.GetMsgType(msg)))
                 {
                     Log("ERROR: Invalid LOGON message, disconnecting: " + e.Message);
                     DisconnectClient();
@@ -208,12 +208,6 @@ namespace QuickFix
         {
             return _acceptorDescriptor is not null
                 && !_acceptorDescriptor.GetAcceptedSessions().Any(kv => kv.Key.Equals(sessionId));
-        }
-
-        private bool IsAssumedSession(SessionID sessionID)
-        {
-            return acceptorDescriptor_ != null 
-                   && !acceptorDescriptor_.GetAcceptedSessions().Any(kv => kv.Key.Equals(sessionID));
         }
         
         private void HandleExceptionInternal(Session? quickFixSession, Exception cause) {

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using QuickFix.Logger;
 using QuickFix.Store;
-using MessagesBySeqNum = System.Collections.Generic.Dictionary<ulong, QuickFix.Message>;
+using MessagesBySeqNum = System.Collections.Generic.Dictionary<ulong, QuickFix.Message.Message>;
 
 namespace QuickFix
 {
@@ -294,7 +294,7 @@ namespace QuickFix
             return !(_resendRange.BeginSeqNo == 0 && _resendRange.EndSeqNo == 0);
         }
 
-        public void Queue(SeqNumType msgSeqNum, Message msg)
+        public void Queue(SeqNumType msgSeqNum, Message.Message msg)
         {
             if (!MsgQueue.ContainsKey(msgSeqNum))
             {
@@ -307,22 +307,22 @@ namespace QuickFix
             MsgQueue.Clear();
         }
 
-        public QuickFix.Message? Dequeue(SeqNumType num)
+        public Message.Message? Dequeue(SeqNumType num)
         {
             if (MsgQueue.ContainsKey(num))
             {
-                QuickFix.Message msg = MsgQueue[num];
+                Message.Message msg = MsgQueue[num];
                 MsgQueue.Remove(num);
                 return msg;
             }
             return null;
         }
 
-        public Message? Retrieve(SeqNumType msgSeqNum)
+        public Message.Message? Retrieve(SeqNumType msgSeqNum)
         {
             if (MsgQueue.ContainsKey(msgSeqNum))
             {
-                Message msg = MsgQueue[msgSeqNum];
+                Message.Message msg = MsgQueue[msgSeqNum];
                 MsgQueue.Remove(msgSeqNum);
                 return msg;
             }

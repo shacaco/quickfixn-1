@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace QuickFix.Logger;
 
 /// <summary>
@@ -11,10 +13,10 @@ public sealed class NullLog : ILog
     public void Clear()
     { }
 
-    public void OnIncoming(string msg)
+    public void OnIncoming(ReadOnlySpan<char> msg)
     { }
 
-    public void OnOutgoing(string msg)
+    public void OnOutgoing(ReadOnlySpan<char> msg)
     { }
 
     public void OnEvent(string s)

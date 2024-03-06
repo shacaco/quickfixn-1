@@ -7,7 +7,7 @@ using System.Threading;
 using QuickFix.Util;
 using Utils;
 
-namespace QuickFix
+namespace QuickFix.Store
 {
     /// <summary>
     /// File store implementation
@@ -34,9 +34,9 @@ namespace QuickFix
         private string headerFileName_;
         private string sessionFileName_;
 
-        private System.IO.FileStream msgFile_;
-        private System.IO.StreamWriter headerFile_;
-        private System.IO.StreamWriter seqNumsWriter_;
+        private FileStream msgFile_;
+        private StreamWriter headerFile_;
+        private StreamWriter seqNumsWriter_;
         private readonly byte[] _writeBuffer = new byte[1024];
         private MemoryStore cache_ = new MemoryStore();
         private Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
@@ -54,7 +54,7 @@ namespace QuickFix
 
         public static string Prefix(SessionID sessionID)
         {
-            System.Text.StringBuilder prefix = new System.Text.StringBuilder(sessionID.BeginString)
+            StringBuilder prefix = new StringBuilder(sessionID.BeginString)
                 .Append('-').Append(sessionID.SenderCompID);
             if (SessionID.IsSet(sessionID.SenderSubID))
                 prefix.Append('_').Append(sessionID.SenderSubID);
@@ -74,17 +74,17 @@ namespace QuickFix
 
         public FileStoreAsync(string path, SessionID sessionID)
         {
-            if (!System.IO.Directory.Exists(path))
-                System.IO.Directory.CreateDirectory(path);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
 
             string prefix = Prefix(sessionID);
 
-            seqNumsFileName_ = System.IO.Path.Combine(path, prefix + ".seqnums");
-            msgFileName_ = System.IO.Path.Combine(path, prefix + ".body");
-            headerFileName_ = System.IO.Path.Combine(path, prefix + ".header");
-            sessionFileName_ = System.IO.Path.Combine(path, prefix + ".session");
+            seqNumsFileName_ = Path.Combine(path, prefix + ".seqnums");
+            msgFileName_ = Path.Combine(path, prefix + ".body");
+            headerFileName_ = Path.Combine(path, prefix + ".header");
+            sessionFileName_ = Path.Combine(path, prefix + ".session");
             open();
-            _setThread = new Thread(SetSeqNumTask){ IsBackground = true };
+            _setThread = new Thread(SetSeqNumTask) { IsBackground = true };
             _setThread.Start();
         }
 
@@ -93,30 +93,30 @@ namespace QuickFix
             ConstructFromFileCache();
             InitializeSessionCreateTime();
 
-            seqNumsWriter_ = new StreamWriter(new System.IO.FileStream(seqNumsFileName_, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite));
-            msgFile_ = new System.IO.FileStream(msgFileName_, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
-            headerFile_ = new System.IO.StreamWriter(headerFileName_, true);
+            seqNumsWriter_ = new StreamWriter(new FileStream(seqNumsFileName_, FileMode.OpenOrCreate, FileAccess.ReadWrite));
+            msgFile_ = new FileStream(msgFileName_, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            headerFile_ = new StreamWriter(headerFileName_, true);
         }
 
-        private void PurgeSingleFile(System.IO.Stream stream, string filename)
+        private void PurgeSingleFile(Stream stream, string filename)
         {
             if (stream != null)
                 stream.Close();
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
+            if (File.Exists(filename))
+                File.Delete(filename);
         }
 
-        private void PurgeSingleFile(System.IO.StreamWriter stream, string filename)
+        private void PurgeSingleFile(StreamWriter stream, string filename)
         {
             stream?.Close();
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
+            if (File.Exists(filename))
+                File.Delete(filename);
         }
 
         private void PurgeSingleFile(string filename)
         {
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
+            if (File.Exists(filename))
+                File.Delete(filename);
         }
 
         private void PurgeFileCache()
@@ -130,9 +130,9 @@ namespace QuickFix
         private void ConstructFromFileCache()
         {
             offsets_.Clear();
-            if (System.IO.File.Exists(headerFileName_))
+            if (File.Exists(headerFileName_))
             {
-                using (System.IO.StreamReader reader = new System.IO.StreamReader(headerFileName_))
+                using (StreamReader reader = new StreamReader(headerFileName_))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
@@ -147,9 +147,9 @@ namespace QuickFix
                 }
             }
 
-            if (System.IO.File.Exists(seqNumsFileName_))
+            if (File.Exists(seqNumsFileName_))
             {
-                using (System.IO.StreamReader seqNumReader = new System.IO.StreamReader(seqNumsFileName_))
+                using (StreamReader seqNumReader = new StreamReader(seqNumsFileName_))
                 {
                     string[] parts = seqNumReader.ReadToEnd().Split(':');
                     if (parts.Length == 2)
@@ -163,9 +163,9 @@ namespace QuickFix
 
         private void InitializeSessionCreateTime()
         {
-            if (System.IO.File.Exists(sessionFileName_) && new System.IO.FileInfo(sessionFileName_).Length > 0)
+            if (File.Exists(sessionFileName_) && new FileInfo(sessionFileName_).Length > 0)
             {
-                using (System.IO.StreamReader reader = new System.IO.StreamReader(sessionFileName_))
+                using (StreamReader reader = new StreamReader(sessionFileName_))
                 {
                     string s = reader.ReadToEnd();
                     cache_.CreationTime = UtcDateTimeSerializer.FromString(s);
@@ -173,7 +173,7 @@ namespace QuickFix
             }
             else
             {
-                using (System.IO.StreamWriter writer = new System.IO.StreamWriter(sessionFileName_, false))
+                using (StreamWriter writer = new StreamWriter(sessionFileName_, false))
                 {
                     writer.Write(UtcDateTimeSerializer.ToString(cache_.CreationTime.Value));
                 }
@@ -195,7 +195,7 @@ namespace QuickFix
                 {
                     if (offsets_.ContainsKey(i))
                     {
-                        msgFile_.Seek(offsets_[i].index, System.IO.SeekOrigin.Begin);
+                        msgFile_.Seek(offsets_[i].index, SeekOrigin.Begin);
                         byte[] msgBytes = new byte[offsets_[i].size];
                         msgFile_.Read(msgBytes, 0, msgBytes.Length);
                         var data = CharEncoding.DefaultEncoding.GetString(msgBytes);
@@ -275,7 +275,7 @@ namespace QuickFix
                     {
                         var msg = tuple.Item1;
                         var msgSeqNum = tuple.Item2;
-                        msgFile_.Seek(0, System.IO.SeekOrigin.End);
+                        msgFile_.Seek(0, SeekOrigin.End);
 
                         long offset = msgFile_.Position;
                         var length = CharEncoding.DefaultEncoding.GetBytes(msg, _writeBuffer);
@@ -297,14 +297,14 @@ namespace QuickFix
                     SeqMsgBuffer.Remove(13, 10);
                     SeqMsgBuffer.Insert(13, NextTargetMsgSeqNum.ToString("D10"));
 
-                    seqNumsWriter_.BaseStream.Seek(0, System.IO.SeekOrigin.Begin);
+                    seqNumsWriter_.BaseStream.Seek(0, SeekOrigin.Begin);
                     seqNumsWriter_.Write(SeqMsgBuffer.ToString());
                     seqNumsWriter_.Flush();
                 }
             }
         }
 
-        [System.Obsolete("Use CreationTime instead")]
+        [Obsolete("Use CreationTime instead")]
         public DateTime GetCreationTime()
         {
             throw new NotImplementedException();

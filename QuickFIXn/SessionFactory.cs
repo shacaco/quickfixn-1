@@ -67,7 +67,7 @@ namespace QuickFix
                 }
                 string rawDefaultApplVerIdSetting = settings.GetString(SessionSettings.DEFAULT_APPLVERID);
 
-                defaultApplVerId = Message.GetApplVerID(rawDefaultApplVerIdSetting);
+                defaultApplVerId = Message.Message.GetApplVerID(rawDefaultApplVerIdSetting);
 
                 // DefaultMessageFactory as created in the SessionFactory ctor cannot
                 // tell the difference between FIX50 versions (same BeginString, unknown defaultApplVerId).
@@ -211,7 +211,7 @@ namespace QuickFix
                 {
                     if (setting.Key.Equals(SessionSettings.APP_DATA_DICTIONARY, System.StringComparison.CurrentCultureIgnoreCase))
                     {
-                        Fields.ApplVerID applVerId = Message.GetApplVerID(settings.GetString(SessionSettings.DEFAULT_APPLVERID));
+                        Fields.ApplVerID applVerId = Message.Message.GetApplVerID(settings.GetString(SessionSettings.DEFAULT_APPLVERID));
                         DataDictionary.DataDictionary dd = CreateDataDictionary(sessionId, settings, SessionSettings.APP_DATA_DICTIONARY, sessionId.BeginString);
                         provider.AddApplicationDataDictionary(applVerId.Obj, dd);
                     }
@@ -224,7 +224,7 @@ namespace QuickFix
 
                         string beginStringQualifier = setting.Key.Substring(offset);
                         DataDictionary.DataDictionary dd = CreateDataDictionary(sessionId, settings, setting.Key, beginStringQualifier);
-                        provider.AddApplicationDataDictionary(Message.GetApplVerID(beginStringQualifier).Obj, dd);
+                        provider.AddApplicationDataDictionary(Message.Message.GetApplVerID(beginStringQualifier).Obj, dd);
                     }
                 }
             }

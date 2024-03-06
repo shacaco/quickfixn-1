@@ -2,6 +2,6 @@
 {
     public interface IMessageCracker
     {
-        void Crack(Message message, SessionID sessionID);
+        void Crack(Message.Message message, SessionID sessionID);
     }
 }

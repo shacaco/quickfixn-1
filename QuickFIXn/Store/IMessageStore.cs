@@ -23,7 +23,7 @@ public interface IMessageStore : IDisposable
     /// <param name="msgSeqNum">the sequence number</param>
     /// <param name="msg">the raw FIX message string</param>
     /// <returns>true if successful, false otherwise</returns>
-    bool Set(SeqNumType msgSeqNum, string msg);
+    bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg);
 
     SeqNumType NextSenderMsgSeqNum { get; set; }
     SeqNumType NextTargetMsgSeqNum { get; set; }

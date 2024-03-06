@@ -11,7 +11,7 @@ namespace QuickFix
     /// </summary>
     public abstract class MessageCracker : IMessageCracker
     {
-        private Dictionary<Type, Action<Message, SessionID>> _callCache = new Dictionary<Type, Action<Message, SessionID>>();
+        private Dictionary<Type, Action<Message.Message, SessionID>> _callCache = new Dictionary<Type, Action<Message.Message, SessionID>>();
 
         public MessageCracker()
         {
@@ -44,7 +44,7 @@ namespace QuickFix
 
                 var expParamSessionId = parameters[1];
 
-                var messageParam = Expression.Parameter(typeof(Message), "message");
+                var messageParam = Expression.Parameter(typeof(Message.Message), "message");
 
                 var sessionParam = Expression.Parameter(typeof(SessionID), "sessionID");
 
@@ -52,7 +52,7 @@ namespace QuickFix
 
                 var methodCall = Expression.Call(instance, m, Expression.Convert(messageParam, expParamMessage.ParameterType), Expression.Convert(sessionParam, expParamSessionId.ParameterType));
 
-                var action = Expression.Lambda<Action<Message, SessionID>>(methodCall, messageParam, sessionParam).Compile();
+                var action = Expression.Lambda<Action<Message.Message, SessionID>>(methodCall, messageParam, sessionParam).Compile();
 
                 _callCache[expParamMessage.ParameterType] = action;
 
@@ -65,7 +65,7 @@ namespace QuickFix
             return (m.IsPublic == true
                 && m.Name.Equals("OnMessage")
                 && m.GetParameters().Length == 2
-                && m.GetParameters()[0].ParameterType.IsSubclassOf(typeof(QuickFix.Message))
+                && m.GetParameters()[0].ParameterType.IsSubclassOf(typeof(Message.Message))
                 && typeof(QuickFix.SessionID).IsAssignableFrom(m.GetParameters()[1].ParameterType)
                 && m.ReturnType == typeof(void));
         }
@@ -76,11 +76,11 @@ namespace QuickFix
         /// </summary>
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
-        public void Crack(Message message, SessionID sessionID)
+        public void Crack(Message.Message message, SessionID sessionID)
         {
             Type messageType = message.GetType();
 
-            Action<Message, SessionID> onMessage = null;
+            Action<Message.Message, SessionID> onMessage = null;
 
             if (_callCache.TryGetValue(messageType, out onMessage))
             {
