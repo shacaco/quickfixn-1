@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using QuickFix;
 using QuickFix.Fields;
+using QuickFix.Message;
 
 namespace UnitTests
 {
@@ -30,7 +30,7 @@ namespace UnitTests
             noParty.AddGroup(noPartySub);
 
             string msgString = noParty.ToString();
-            string expected = String.Join(Message.SOH, new string[] {
+            string expected = String.Join(Message.SohChar, new string[] {
                 "448=ABC","447=D","452=4",
                 "802=2", //NoPartySubIDs
                     "523=subABC","803=1",
@@ -53,7 +53,7 @@ namespace UnitTests
             Assert.AreEqual(linesGroup.Text.Obj, clone.Text.Obj);
             Assert.AreEqual(linesGroup.EncodedText.Obj, clone.EncodedText.Obj);
             Assert.AreEqual(linesGroup.Delim, clone.Delim);
-            Assert.AreEqual(linesGroup.Field, clone.Field);
+            Assert.AreEqual(linesGroup.CounterField, clone.CounterField);
             Assert.AreEqual(linesGroup.FieldOrder, clone.FieldOrder);
         }
     }

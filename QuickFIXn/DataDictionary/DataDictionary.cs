@@ -80,7 +80,7 @@ namespace QuickFix.DataDictionary
             this.Trailer = src.Trailer;
         }
 
-        public static void Validate(Message message, DataDictionary sessionDataDict, DataDictionary appDataDict, string beginString, string msgType)
+        public static void Validate(Message.Message message, DataDictionary sessionDataDict, DataDictionary appDataDict, string beginString, string msgType)
         {
             bool bodyOnly = (null == sessionDataDict);
 
@@ -90,8 +90,7 @@ namespace QuickFix.DataDictionary
 
             if (((null != sessionDataDict) && sessionDataDict.CheckFieldsOutOfOrder) || ((null != appDataDict) && appDataDict.CheckFieldsOutOfOrder))
             {
-                int field;
-                if (!message.HasValidStructure(out field))
+                if (!message.HasValidStructure(out var field))
                     throw new TagOutOfOrder(field);
             }
 
@@ -110,7 +109,7 @@ namespace QuickFix.DataDictionary
             appDataDict.Iterate(message, msgType);
         }
 
-        public void Validate(Message message, string beginString, string msgType)
+        public void Validate(Message.Message message, string beginString, string msgType)
         {
             Validate(message, false, beginString, msgType);
         }
@@ -122,7 +121,7 @@ namespace QuickFix.DataDictionary
         /// <param name="bodyOnly">whether to validate just the message body, or to validate the header and trailer sections as well</param>
         /// <param name="beginString"></param>
         /// <param name="msgType"></param>
-        public void Validate(Message message, bool bodyOnly, string beginString, string msgType)
+        public void Validate(Message.Message message, bool bodyOnly, string beginString, string msgType)
         {
             DataDictionary sessionDataDict = null;
             if (!bodyOnly)
@@ -151,7 +150,7 @@ namespace QuickFix.DataDictionary
                 throw new InvalidMessageType();
         }
 
-        public void CheckHasRequired(Message message, string msgType)
+        public void CheckHasRequired(Message.Message message, string msgType)
         {
             foreach (int field in Header.ReqFields)
             {
@@ -199,7 +198,7 @@ namespace QuickFix.DataDictionary
                     {
                         CheckValidTagNumber(field.Tag);
                         CheckValue(field);
-                        if (!Message.IsHeaderField(field.Tag, this) && !Message.IsTrailerField(field.Tag, this))
+                        if (!Message.Message.IsHeaderField(field.Tag, this) && !Message.Message.IsTrailerField(field.Tag, this))
                         {
                             CheckIsInMessage(field, msgType);
                             CheckGroupCount(field, map, msgType);

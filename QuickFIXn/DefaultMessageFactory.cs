@@ -56,16 +56,16 @@ namespace QuickFix
             return _factories.Keys.ToList();
         }
 
-        public Message Create(string beginString, string msgType)
+        public Message.Message Create(string beginString, string msgType)
         {
             return Create(beginString, _defaultApplVerId, msgType);
         }
 
-        public Message Create(string beginString, QuickFix.Fields.ApplVerID applVerID, string msgType)
+        public Message.Message Create(string beginString, QuickFix.Fields.ApplVerID applVerID, string msgType)
         {
             _factories.TryGetValue(beginString, out IMessageFactory messageFactory);
 
-            if (beginString == QuickFix.Values.BeginString_FIXT11 && !Message.IsAdminMsgType(msgType))
+            if (beginString == QuickFix.Values.BeginString_FIXT11 && !Message.Message.IsAdminMsgType(msgType))
             {
                 if (applVerID == null)
                     applVerID = _defaultApplVerId;
@@ -78,7 +78,7 @@ namespace QuickFix
                 return messageFactory.Create(beginString, applVerID, msgType);
 
             // didn't find a factory, so return a generic Message object
-            var message = new Message();
+            var message = new Message.Message();
             var field = new StringField(Tags.MsgType, msgType);
             message.Header.SetField(field);
             return message;
@@ -102,7 +102,7 @@ namespace QuickFix
             }
         }
 
-        public void ReturnIfReusable(Message m)
+        public void ReturnIfReusable(Message.Message m)
         {
             
         }
@@ -184,7 +184,7 @@ namespace QuickFix
             var assemblies = AppDomain
                 .CurrentDomain
                 .GetAssemblies()
-                .Where(assembly => !assembly.IsDynamic && assembly.GetName().Name.StartsWith("QuickFix"))
+                .Where(assembly => !assembly.IsDynamic && assembly.GetName().Name.StartsWith("QuickFix", StringComparison.Ordinal))
                 .ToList();
             return assemblies;
         }

@@ -2,6 +2,7 @@
 using QuickFix;
 using QuickFix.Fields;
 using System.Collections.Generic;
+using QuickFix.Message;
 
 namespace TradeClient
 {

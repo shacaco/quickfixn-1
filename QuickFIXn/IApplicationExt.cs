@@ -21,6 +21,6 @@ namespace QuickFix
         /// </summary>
         /// <param name="message">received message</param>
         /// <param name="sessionID">session on which message received</param>
-        void FromEarlyIntercept(Message message, SessionID sessionID);
+        void FromEarlyIntercept(Message.Message message, SessionID sessionID);
     }
 }

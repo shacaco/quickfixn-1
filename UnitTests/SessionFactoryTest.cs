@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using NUnit.Framework;
 using QuickFix;
+using QuickFix.Store;
 
 namespace UnitTests
 {
@@ -15,7 +16,7 @@ namespace UnitTests
             SessionFactory factory = new SessionFactory(app, storeFactory);
 
             SessionID sessionID = new SessionID("FIX.4.2", "SENDER", "TARGET");
-            Dictionary settings = new Dictionary();
+            SettingsDictionary settings = new SettingsDictionary();
             settings.SetString(SessionSettings.USE_DATA_DICTIONARY, "N");
             settings.SetString(SessionSettings.CONNECTION_TYPE, "initiator");
             settings.SetString(SessionSettings.HEARTBTINT, "30");
@@ -39,7 +40,7 @@ namespace UnitTests
             SessionFactory factory = new SessionFactory(app, storeFactory);
 
             SessionID sessionID = new SessionID("FIX.4.2", "SENDER", "TARGET");
-            Dictionary settings = new Dictionary();
+            SettingsDictionary settings = new SettingsDictionary();
             settings.SetString(SessionSettings.CONNECTION_TYPE, "initiator");
             settings.SetString(SessionSettings.USE_DATA_DICTIONARY, "N");
             settings.SetString(SessionSettings.START_TIME, "12:00:00");
@@ -57,7 +58,7 @@ namespace UnitTests
             SessionFactory factory = new SessionFactory(app, storeFactory);
 
             SessionID sessionID = new SessionID("FIX.4.2", "SENDER", "TARGET");
-            Dictionary settings = new Dictionary();
+            SettingsDictionary settings = new SettingsDictionary();
             settings.SetString(SessionSettings.CONNECTION_TYPE, "initiator");
             settings.SetString(SessionSettings.USE_DATA_DICTIONARY, "N");
             settings.SetString(SessionSettings.START_TIME, "12:00:00");
@@ -77,7 +78,7 @@ namespace UnitTests
             SessionFactory factory = new SessionFactory(app, storeFactory);
 
             SessionID sessionID = new SessionID("FIX.4.2", "SENDER", "TARGET");
-            Dictionary settings = new Dictionary();
+            SettingsDictionary settings = new SettingsDictionary();
             settings.SetString(SessionSettings.USE_DATA_DICTIONARY, "N");
             settings.SetString(SessionSettings.SEND_REDUNDANT_RESENDREQUESTS, "Y");
             settings.SetString(SessionSettings.RESEND_SESSION_LEVEL_REJECTS, "Y");
@@ -119,7 +120,7 @@ namespace UnitTests
             SessionFactory factory = new SessionFactory(app, storeFactory);
 
             SessionID sessionID = new SessionID("FIX.4.2", "SENDER", "TARGET");
-            Dictionary settings = new Dictionary();
+            SettingsDictionary settings = new SettingsDictionary();
             settings.SetString(SessionSettings.CONNECTION_TYPE, "initiator");
             settings.SetString(SessionSettings.USE_DATA_DICTIONARY, "N");
             settings.SetString(SessionSettings.HEARTBTINT, "30");

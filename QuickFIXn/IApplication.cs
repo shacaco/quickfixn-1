@@ -14,7 +14,7 @@
         /// </summary>
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
-        void ToAdmin(Message message, SessionID sessionID);
+        void ToAdmin(Message.Message message, SessionID sessionID);
 
         /// <summary>
         /// This callback notifies you when an administrative message is sent from a
@@ -25,7 +25,7 @@
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
         /// <exception cref="RejectLogon">throw this to reject a login</exception>
-        void FromAdmin(Message message, SessionID sessionID);
+        void FromAdmin(Message.Message message, SessionID sessionID);
 
         /// <summary>
         /// This is a callback for application messages that you are sending to a
@@ -42,7 +42,7 @@
         /// <param name="message"></param>
         /// <param name="sessionID"></param>
         /// <exception cref="DoNotSend">throw this to abort sending the message</exception>
-        void ToApp(Message message, SessionID sessionID);
+        void ToApp(Message.Message message, SessionID sessionID);
 
         /// <summary>
         /// This callback receives messages for the application. This is one of the
@@ -64,7 +64,7 @@
         /// <exception cref="FieldNotFoundException">throw this to notify counterparty is missing a required field</exception>
         /// <exception cref="UnsupportedMessageType">throw this to notify counterparty we can't process this message</exception>
         /// <exception cref="IncorrectTagValue">throw this to notify counterparty that a field contains an incorrect value</exception>
-        void FromApp(Message message, SessionID sessionID);
+        void FromApp(Message.Message message, SessionID sessionID);
 
         /// <summary>
         /// This method is called when quickfix creates a new session. A session
