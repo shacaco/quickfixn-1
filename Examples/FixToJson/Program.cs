@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using QuickFix.Message;
 
 namespace Examples.FixToJson
 {
@@ -17,7 +18,7 @@ namespace Examples.FixToJson
                 using (StreamReader streamReader = new StreamReader(fname))
                 {
                     QuickFix.IMessageFactory msgFactory = new QuickFix.DefaultMessageFactory();
-                    QuickFix.Message msg = new QuickFix.Message();
+                    Message msg = new QuickFix.Message.Message();
                     string comma = "";
                     while (streamReader.ReadLine() is { } line)
                     {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using QuickFix;
 using QuickFix.Fields;
+using QuickFix.Message;
 using UnitTests.TestHelpers;
 
 namespace UnitTests
@@ -13,7 +14,7 @@ namespace UnitTests
     {
         private IMessageFactory _defaultMsgFactory = new DefaultMessageFactory();
 
-        private const char Nul = Message.SOH;
+        private const char Nul = Message.SohChar;
 
         [Test]
         public void IdentifyTypeTest()
@@ -26,10 +27,10 @@ namespace UnitTests
             Assert.That(Message.IdentifyType(msg3).Obj, Is.EqualTo(new MsgType("B").Obj));
 
             // no 35
-            string err1 = String.Join(Message.SOH, new string[] { "8=FIX.4.4", "49=Sender", "" });
+            string err1 = String.Join(Message.SohChar, new string[] { "8=FIX.4.4", "49=Sender", "" });
             Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err1); });
             // no SOH at end of 35
-            string err2 = String.Join(Message.SOH, new string[] { "8=FIX.4.4", "35=A" });
+            string err2 = String.Join(Message.SohChar, new string[] { "8=FIX.4.4", "35=A" });
             Assert.Throws<MessageParseError>(delegate { Message.IdentifyType(err2); });
         }
 
@@ -155,7 +156,7 @@ namespace UnitTests
                 "448=TFOLIO:6804469", "447=D", "452=36",
                 "10=152"
             };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
             msg.FromString(msgStr, true, dd, dd, null); // <-- null factory!
@@ -197,13 +198,13 @@ namespace UnitTests
 
             QuickFix.FIX42.News n = new QuickFix.FIX42.News();
 
-            string s = String.Join(Message.SOH, new string[]{
+            string s = String.Join(Message.SohChar, new string[]{
               "8=FIX.4.2", "9=91", "35=B", "34=2", "49=TW", "52=20111011-15:06:23.103", "56=ISLD",
               "148=headline", "33=3",
               "58=line1", "354=3", "355=uno", // first group, has delimiter
               "354=3", "355=dos", // second group, missing delimiter
               "354=4", "355=tres", // third group, also missing delimiter
-              "10=193" }) + Message.SOH;
+              "10=193" }) + Message.SohChar;
 
             Assert.Throws<RepeatedTagWithoutGroupDelimiterTagException>(delegate { n.FromString(s, true, dd, dd, _defaultMsgFactory); });
         }
@@ -493,15 +494,15 @@ namespace UnitTests
             string msgstr = "100=200\x01" + "300=400\x01" + "500=600\x01";
             int n = 0;
 
-            var x = QuickFix.Message.ExtractField(msgstr, ref n);
+            var x = Message.ExtractField(msgstr, ref n);
             Assert.AreEqual(8, n);
             Assert.AreEqual("100=200", x.toStringField());
 
-            x = QuickFix.Message.ExtractField(msgstr, ref n);
+            x = Message.ExtractField(msgstr, ref n);
             Assert.AreEqual(16, n);
             Assert.AreEqual("300=400", x.toStringField());
 
-            x = QuickFix.Message.ExtractField(msgstr, ref n);
+            x = Message.ExtractField(msgstr, ref n);
             Assert.AreEqual(24, n);
             Assert.AreEqual("500=600", x.toStringField());
         }
@@ -643,13 +644,13 @@ namespace UnitTests
         {
             string[] msgFields = { "8=FIX.4.4", "9=104", "35=W", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012", "273=22:15:30.444", "10=19" };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
             Assert.AreEqual("W", Message.GetMsgType(msgStr));
 
             // invalid 35 value, let it ride
             string[] msgFields2 = { "8=FIX.4.4", "9=68", "35=*", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=0", "10=9" };
-            string msgStr2 = String.Join(Message.SOH, msgFields2) + Message.SOH;
+            string msgStr2 = String.Join(Message.SohChar, msgFields2) + Message.SohChar;
             Assert.AreEqual("*", Message.GetMsgType(msgStr2));
         }
 
@@ -677,7 +678,7 @@ namespace UnitTests
             msg.AddGroup(symGroup);
 
             string msgString = msg.ToString();
-            string expected = String.Join(Message.SOH, new string[] { "146=2", "55=FOO1", "48=secid1", "55=FOO2", "48=secid2" });
+            string expected = String.Join(Message.SohChar, new string[] { "146=2", "55=FOO1", "48=secid1", "55=FOO2", "48=secid2" });
 
             StringAssert.Contains(expected, msgString);
         }
@@ -711,7 +712,7 @@ namespace UnitTests
             msg.AddGroup(symGroup);
 
             string msgString = msg.ToString();
-            string expected = String.Join(Message.SOH, new string[] { "146=2",
+            string expected = String.Join(Message.SohChar, new string[] { "146=2",
                 "55=FOO1", "65=sfx1", "48=secid1", "22=src1",
                 "55=FOO2", "65=sfx2", "48=secid2", "22=src2",
             });
@@ -725,7 +726,7 @@ namespace UnitTests
             QuickFix.FIX50.News msg = new QuickFix.FIX50.News();
             msg.Headline = new Headline("FOO");
 
-            StringAssert.StartsWith("8=FIXT.1.1" + Message.SOH, msg.ToString());
+            StringAssert.StartsWith("8=FIXT.1.1" + Message.SohChar, msg.ToString());
         }
 
         [Test]
@@ -754,7 +755,7 @@ namespace UnitTests
             ci.AddGroup(noParty);
 
             string msgString = ci.ToString();
-            string expected = String.Join(Message.SOH, new string[] {
+            string expected = String.Join(Message.SohChar, new string[] {
                 "909=CollateralInquiry", // top-level fields (non-header)
                 "453=1", //NoPartyIDs
                     "448=ABC","447=D","452=4",
@@ -775,7 +776,7 @@ namespace UnitTests
             var dd = new QuickFix.DataDictionary.DataDictionary();
             dd.LoadFIXSpec("FIX44");
             string[] msgFields = { "8=FIX.4.2", "9=87", "35=B", "34=3", "49=CLIENT1", "52=20111012-22:15:55.474", "56=EXECUTOR", "148=AAAAAAA", "33=2", "58=L1", "58=L2", "10=016" };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
             QuickFix.FIX42.News msg = new QuickFix.FIX42.News();
             msg.FromString(msgStr, false, dd, dd, _defaultMsgFactory);
             Assert.AreEqual(2, msg.GroupCount(Tags.LinesOfText)); // for sanity
@@ -797,7 +798,7 @@ namespace UnitTests
             var dd = new QuickFix.DataDictionary.DataDictionary();
             dd.LoadFIXSpec("FIX44");
             string[] msgFields = { "8=FIX.4.2", "9=87", "35=B", "34=3", "49=CLIENT1", "52=20111012-22:15:55.474", "56=EXECUTOR", "148=AAAAAAA", "33=2", "58=L1", "58=L2", "10=016" };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
             QuickFix.FIX42.News msg = new QuickFix.FIX42.News();
             msg.FromString(msgStr, false, dd, dd, _defaultMsgFactory);
             Assert.AreEqual(2, msg.GroupCount(Tags.LinesOfText)); // for sanity
@@ -825,7 +826,7 @@ namespace UnitTests
                 "1=20050500001", "55=EURUSD", "453=0", "581=1", "702=1", "704=0", "705=20000", "710=634792896000000000", "715=20120802",
                 "721=P-DEA30E1PHC0IW7V", "730=1.22608", "731=1", "734=1.22608", "753=1", "708=20000", "10=030"
             };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.PositionReport msg = new QuickFix.FIX44.PositionReport();
 
@@ -848,7 +849,7 @@ namespace UnitTests
                 "269=0", "270=97.625", "15=EUR", "271=1246000", "272=20121024", "273=07:30:47", "276=I", "282=BEARGB21XXX", "299=15478575",
                 "269=1", "270=108.08", "15=EUR", "271=884000", "272=20121024", "273=07:30:47", "276=I", "282=BEARGB21XXX", "299=15467902", "10=77"
             };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.MarketDataSnapshotFullRefresh msg = new QuickFix.FIX44.MarketDataSnapshotFullRefresh();
 
@@ -898,7 +899,7 @@ namespace UnitTests
 
             string msgString = msg.ToString(true);
 
-            string expected = String.Join(Message.SOH, new string[] { "35=W", "22=4", "48=BE0932900518", "55=[N/A]", "262=1b145288-9c9a-4911-a084-7341c69d3e6b", "762=EURO_EUR", "268=2",
+            string expected = String.Join(Message.SohChar, new string[] { "35=W", "22=4", "48=BE0932900518", "55=[N/A]", "262=1b145288-9c9a-4911-a084-7341c69d3e6b", "762=EURO_EUR", "268=2",
                 "269=0", "270=97.625", "15=EUR", "271=1246000", "272=20121024", "273=07:30:47", "276=I", "282=BEARGB21XXX", "299=15478575",
                 "269=1", "270=108.08", "15=EUR", "271=884000", "272=20121024", "273=07:30:47", "276=I", "282=BEARGB21XXX", "299=15467902"
             });
@@ -918,7 +919,7 @@ namespace UnitTests
                 "55=ibm", "228=.23", // Instrument component; 228 is a float type in the spec
                 "54=1", "151=1", "14=1", "6=1", "10=45"
             };
-            string msgStr = String.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = String.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
             msg.FromString(msgStr, true, dd, dd, _defaultMsgFactory);
@@ -934,12 +935,12 @@ namespace UnitTests
             dd.LoadFIXSpec("FIX42");
 
             string[] newsFields = { "8=FIX4.2", "9=5", "35=B", "10=133" };
-            string newsStr = String.Join(Message.SOH, newsFields) + Message.SOH;
+            string newsStr = String.Join(Message.SohChar, newsFields) + Message.SohChar;
             QuickFix.FIX42.News news = new QuickFix.FIX42.News();
             news.FromString(newsStr, true, dd, dd, _defaultMsgFactory);
 
             string[] hbFields = { "8=FIX.4.2", "9=16", "35=0", "34=3", "49=TW", "10=1" };
-            string hbStr = String.Join(Message.SOH, hbFields) + Message.SOH;
+            string hbStr = String.Join(Message.SohChar, hbFields) + Message.SohChar;
             QuickFix.FIX42.Heartbeat heartbeat = new QuickFix.FIX42.Heartbeat();
             heartbeat.FromString(hbStr, true, dd, dd, _defaultMsgFactory);
 
@@ -954,7 +955,7 @@ namespace UnitTests
         public void issue95()
         {
             // Parser screws up on triple-nested groups.  Contributes to ResendRequest failures.
-            string msgStr = String.Join(Message.SOH, new string[]{
+            string msgStr = String.Join(Message.SohChar, new string[]{
                 "8=FIX.4.4","9=999","35=R","34=6","49=sendercompid","52=20130225-10:44:59.149","56=targetcompid", //headers
                     "131=quotereqid",
                     "146=1", // NoRelatedSym
@@ -975,9 +976,9 @@ namespace UnitTests
 
             // make sure repeating groups are not rearranged
             // 1 level deep
-            StringAssert.Contains(String.Join(Message.SOH, new string[] { "55=ABC", "65=CD", "48=securityid", "22=1" }), msg.ToString());
+            StringAssert.Contains(String.Join(Message.SohChar, new string[] { "55=ABC", "65=CD", "48=securityid", "22=1" }), msg.ToString());
             // 2 levels deep
-            StringAssert.Contains(String.Join(Message.SOH, new string[] { "311=underlyingsymbol", "312=WI", "309=underlyingsecurityid", "305=1" }), msg.ToString());
+            StringAssert.Contains(String.Join(Message.SohChar, new string[] { "311=underlyingsymbol", "312=WI", "309=underlyingsecurityid", "305=1" }), msg.ToString());
         }
 
         [Test]
@@ -1009,7 +1010,7 @@ namespace UnitTests
             msg.Trailer.SetField(new Signature("woot"));
             msg.Trailer.SetField(new SignatureLength(4));
 
-            string foo = msg.ToString().Replace(Message.SOH, '|');
+            string foo = msg.ToString().Replace(Message.SohChar, '|');
             StringAssert.EndsWith("|10=099|", foo);
         }
 
@@ -1074,7 +1075,7 @@ namespace UnitTests
             dd.LoadFIXSpec("FIX44");
             var msg = new Message();
             msg.FromJson(json, true, dd, dd, _defaultMsgFactory);
-            //TestContext.Out.WriteLine(msg.ToString().Replace(Message.SOH, "|"));
+            //TestContext.Out.WriteLine(msg.ToString().Replace(Message.SohChar, "|"));
 
             // Then the Header of the Message should contain:
             Assert.That(msg.Header.GetString(Tags.BeginString), Is.EqualTo("FIX.4.4"));

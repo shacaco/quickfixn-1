@@ -3,7 +3,8 @@ using System;
 using System.Text;
 using QuickFix.Fields;
 
-namespace QuickFix.Message {
+namespace QuickFix.Message
+{
     public class Trailer : FieldMap 
     {
         public int[] TRAILER_FIELD_ORDER = { Tags.SignatureLength, Tags.Signature, Tags.CheckSum };

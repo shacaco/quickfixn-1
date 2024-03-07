@@ -5,6 +5,7 @@ using System.Xml;
 using NUnit.Framework;
 using QuickFix;
 using QuickFix.Fields;
+using QuickFix.Message;
 using UnitTests.TestHelpers;
 
 namespace UnitTests
@@ -14,7 +15,7 @@ namespace UnitTests
     {
         private QuickFix.IMessageFactory _defaultMsgFactory = new QuickFix.DefaultMessageFactory();
 
-        private const char NUL = Message.SOH;
+        private const char NUL = Message.SohChar;
 
         [Test]
         public void VersionTest()
@@ -335,7 +336,7 @@ namespace UnitTests
                                    "11=clordid", "55=sym", "54=1", "60=20110909-09:09:09.999", "40=1", 
                                    "38=failboat", // should be a decimal
                                    "10=64"};
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "D";
             string beginString = "FIX.4.4";
@@ -381,7 +382,7 @@ namespace UnitTests
                 + "1111=mundane|5555=magicfield|6660=1|7770=2|7711=Hoppy|7712=brown|"
                 + "7711=Floppy|7712=white|6661=abracadabra|10=48|";
             // note: length and checksum might be garbage
-            string msgStr = pipedStr.Replace('|', Message.SOH);
+            string msgStr = pipedStr.Replace('|', Message.SohChar);
 
             string beginString = Message.ExtractBeginString(msgStr).Obj;
             Message msg = new Message(msgStr, dd, false);
@@ -415,7 +416,7 @@ namespace UnitTests
                                       "146=1", // InstrmtMDReqGrp
                                         "55=sym",
                                       "10=91"};
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "V";
             string beginString = "FIX.4.4";
@@ -441,7 +442,7 @@ namespace UnitTests
                                          "757=nested2partyid",
                                          "759=failboat", // supposed to be a int
                                      "10=48"};
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "J";
             string beginString = "FIX.4.4";
@@ -461,7 +462,7 @@ namespace UnitTests
 
             string[] msgFields = { "8=FIX.4.4", "9=104", "35=W", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012", "273=22:15:30.444", "10=19" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -491,7 +492,7 @@ namespace UnitTests
             // intentionally invalid SendingTime (52/DateTime)
             string[] msgFields = { "8=FIX.4.4", "9=91", "35=W", "34=3", "49=sender", "52=20110909", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012", "273=22:15:30.444", "10=51" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -512,7 +513,7 @@ namespace UnitTests
             // intentionally invalid MDEntryDate (272/DateOnly)
             string[] msgFields = { "8=FIX.4.4", "9=117", "35=W", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012-22:15:30.444", "273=22:15:30.444", "10=175" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -533,7 +534,7 @@ namespace UnitTests
             // intentionally invalid MDEntryTime (272/TimeOnly)
             string[] msgFields = { "8=FIX.4.4", "9=113", "35=W", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "55=sym", "268=1", "269=0", "272=20111012", "273=20111012-22:15:30.444", "10=200" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -564,7 +565,7 @@ namespace UnitTests
 
             string[] msgFields = { "8=FIX.4.4", "9=77", "35=AD", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "568=tradereqid", "569=0", "10=109" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "AD";
             string beginString = "FIX.4.4";
@@ -584,7 +585,7 @@ namespace UnitTests
 
             string[] msgFields = { "8=FIX.4.4", "9=76", "35=7", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                      "2=AdvId", "5=N", "4=B", "53=1", "10=138" };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "7";
             string beginString = "FIX.4.4";
@@ -629,7 +630,7 @@ namespace UnitTests
                                    "55=sym",
                                    "268=1", "269=0", "270=123.23", "271=2", "277=A B", 
                                    "10=213"};
-            string msgStr = string.Join( Message.SOH, msgFields ) + Message.SOH;
+            string msgStr = string.Join( Message.SohChar, msgFields ) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -651,7 +652,7 @@ namespace UnitTests
                                    "55=sym",
                                    "268=1", "269=0", "270=123.23", "271=2", "277=A 1", 
                                    "10=196"};
-            string msgStr = string.Join( Message.SOH, msgFields ) + Message.SOH;
+            string msgStr = string.Join( Message.SohChar, msgFields ) + Message.SohChar;
 
             string msgType = "W";
             string beginString = "FIX.4.4";
@@ -671,7 +672,7 @@ namespace UnitTests
 
             string[] msgFields = {"8=FIX.4.2", "9=70", "35=B", "34=3", "49=sender", "52=20110909-09:09:09.999", "56=target",
                                    "358=", "148=", "33=0", "10=150"};
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             string msgType = "B";
             string beginString = "FIX.4.2";

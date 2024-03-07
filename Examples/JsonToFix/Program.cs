@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text.Json;
 using QuickFix;
+using QuickFix.Message;
 
 namespace Examples.JsonToFix
 {

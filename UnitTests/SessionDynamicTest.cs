@@ -11,6 +11,7 @@ using QuickFix;
 using QuickFix.Logger;
 using QuickFix.Store;
 using QuickFix.Transport;
+using QuickFix.Message;
 
 namespace UnitTests
 {

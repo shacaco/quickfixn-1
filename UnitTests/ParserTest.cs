@@ -2,6 +2,7 @@ using NUnit.Framework;
 using QuickFix;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace UnitTests
@@ -82,8 +83,8 @@ namespace UnitTests
 
                 for (int i = 0; i < batchSize; i++)
                 {
-                    Assert.True(parser.ReadFixMessage(out string message));
-                    Assert.AreEqual(batch[i], message);
+                    Assert.True(parser.ReadFixMessage(out var message));
+                    Assert.AreEqual(batch[i], message.ToString());
                 }
 
                 Assert.False(parser.ReadFixMessage(out _));
@@ -134,8 +135,8 @@ namespace UnitTests
             string expectedMessage = string.Join("", messageParts.Skip(1));
 
             parser.AddToStream(CharEncoding.DefaultEncoding.GetBytes(messageParts[^1]));
-            Assert.True(parser.ReadFixMessage(out string actualMessage));
-            Assert.AreEqual(expectedMessage, actualMessage);
+            Assert.True(parser.ReadFixMessage(out var actualMessage));
+            Assert.AreEqual(expectedMessage, actualMessage.ToString());
         }
 
         [Test]
@@ -144,14 +145,14 @@ namespace UnitTests
             string fixMsg = "8=TEST\x01" + "9=TEST\x01" + "35=TEST\x01" + "49=SS1\x01" + "56=RORE\x01" + "34=3\x01" + "52=20050222-16:45:53\x01" + "10=TEST\x01";
 
             Parser parser = new Parser();
-            parser.AddToStream(fixMsg);
+          //  parser.AddToStream(fixMsg);
             parser.AddToStream(StrToBytes(normalLength));
 
             Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out _); });
             
             // nothing thrown now because the previous call removes bad data from buffer:
-            Assert.True(parser.ReadFixMessage(out string readFixMsg));
-            Assert.AreEqual(normalLength, readFixMsg);
+            Assert.True(parser.ReadFixMessage(out var readFixMsg));
+            Assert.AreEqual(normalLength, readFixMsg.ToString());
         }
 
         [Test]

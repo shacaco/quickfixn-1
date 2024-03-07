@@ -2,6 +2,7 @@
 using System.IO;
 using NUnit.Framework;
 using QuickFix;
+using QuickFix.Message;
 
 namespace UnitTests
 {
@@ -47,7 +48,7 @@ namespace UnitTests
                 "448=TFOLIO:6804469", "447=D", "452=36",
                 "10=152"
             };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
             msg.FromString(msgStr, true, dd, dd, null); // <-- null factory!
@@ -83,7 +84,7 @@ namespace UnitTests
                 "448=TFOLIO:6804469", "447=D", "452=36",
                 "10=152"
             };
-            string msgStr = string.Join(Message.SOH, msgFields) + Message.SOH;
+            string msgStr = string.Join(Message.SohChar, msgFields) + Message.SohChar;
 
             QuickFix.FIX44.ExecutionReport msg = new QuickFix.FIX44.ExecutionReport();
             msg.FromString(msgStr, true, dd, dd, null); // <-- null factory!

@@ -30,7 +30,7 @@ namespace QuickFix.Message
 
         public Header Header { get; }
         public Trailer Trailer { get; }
-        public DataDictionary.DataDictionary? ApplicationDataDictionary { get; private set; }
+        public DD? ApplicationDataDictionary { get; private set; }
 
         #region Constructors
 
@@ -42,21 +42,21 @@ namespace QuickFix.Message
             _isValid = true;
         }
 
-        public Message(string msgstr, bool validate)
+        public Message(string msgstr, bool validate = true)
             : this(msgstr, null, null, validate)
         { }
 
-        public Message(string msgstr, DataDictionary.DataDictionary dataDictionary, bool validate)
+        public Message(string msgstr, DD dataDictionary, bool validate)
             : this()
         {
-            this.ApplicationDataDictionary = dataDictionary;
+            ApplicationDataDictionary = dataDictionary;
             FromString(msgstr, validate, dataDictionary, dataDictionary, null);
         }
 
-        public Message(string msgstr, DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, bool validate)
+        public Message(string msgstr, DD sessionDataDictionary, DD appDD, bool validate)
             : this()
         {
-            this.ApplicationDataDictionary = appDD;
+            ApplicationDataDictionary = appDD;
             FromStringHeader(msgstr);
             if (IsAdmin())
                 FromString(msgstr, validate, sessionDataDictionary, appDD, null);
@@ -96,7 +96,7 @@ namespace QuickFix.Message
             return f;
         }
 
-        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, StringField field = null)
+        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, StringField field = null)
         {
             try
             {
@@ -319,9 +319,9 @@ namespace QuickFix.Message
         /// <param name="validate"></param>
         /// <param name="sessionDD"></param>
         /// <param name="appDD"></param>
-        public void FromString(ReadOnlySpan<char> msg, bool validate, DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD)
+        public void FromString(ReadOnlySpan<char> msg, bool validate, DD sessionDD, DD appDD)
         {
-            this.ApplicationDataDictionary = appDD;
+            ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, null);
         }
 
@@ -335,9 +335,9 @@ namespace QuickFix.Message
         /// <param name="msgFactory">If null, any groups will be constructed as generic Group objects</param>
         /// <param name="reusableFields"></param>
         public void FromString(ReadOnlySpan<char> msg, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
+            DD sessionDD, DD appDD, IMessageFactory msgFactory)
         {
-            this.ApplicationDataDictionary = appDD;
+            ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, msgFactory, false);
         }
 
@@ -354,22 +354,22 @@ namespace QuickFix.Message
         ///   </param>
         /// <param name="reusableFields"></param>
         public void FromString(ReadOnlySpan<char> msgstr, bool validate,
-            DataDictionary.DataDictionary sessionDD, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory,
+            DD sessionDD, DD appDD, IMessageFactory msgFactory,
             bool ignoreBody)
         {
             Clear();
-            this.ApplicationDataDictionary = appDD;
+            ApplicationDataDictionary = appDD;
 
             bool expectingHeader = true;
             bool expectingBody = true;
             int count = 0;
             int pos = 0;
-            DataDictionary.IFieldMapSpec msgMap = null;
+            IFieldMapSpec msgMap = null;
             while (pos < msgstr.Length)
             {
                 StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, ReusableFields.GetNextReusableStringField());
 
-                if (validate && (count < 3) && (Header.HEADER_FIELD_ORDER[count++] != f.Tag))
+                if (validate && count < 3 && Header.HEADER_FIELD_ORDER[count++] != f.Tag)
                     throw new InvalidMessage("Header fields out of order");
 
                 if (IsHeaderField(f.Tag, sessionDD))
@@ -531,18 +531,17 @@ namespace QuickFix.Message
         /// <param name="groupSpec">group definition structure from dd</param>
         /// <param name="msgFactory">if null, then this method will use the generic Group class constructor</param>
         /// <returns></returns>
-        protected int SetGroup(
-            StringField grpNoFld, ReadOnlySpan<char> msg, int pos, FieldMap fieldMap, DataDictionary.IGroupSpec groupDD,
-            DataDictionary.DataDictionary sessionDataDictionary, DataDictionary.DataDictionary appDD, IMessageFactory msgFactory)
+        protected int SetGroup(StringField grpNoFld, ReadOnlySpan<char> msgstr, int pos, FieldMap fieldMap, IGroupSpec groupSpec,
+            IMessageFactory? msgFactory)
         {
-            int grpEntryDelimiterTag = groupDD.Delim;
+            int grpEntryDelimiterTag = groupSpec.Delim;
             int grpPos = pos;
             Group? grp = null; // the group entry being constructed
 
-            while (pos < msg.Length)
+            while (pos < msgstr.Length)
             {
                 grpPos = pos;
-                StringField f = ExtractField(msg, ref pos, sessionDataDictionary, appDD, ReusableFields.GetNextReusableStringField());
+                StringField f = ExtractField(msgstr, ref pos, ReusableFields.GetNextReusableStringField());
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -555,13 +554,13 @@ namespace QuickFix.Message
 
                     // Create a new group!
                     if (msgFactory != null)
-                        grp = msgFactory.Create(Message.ExtractBeginString(msg).Obj, Message.GetMsgType(msg), grpNoFld.Tag);
+                        grp = msgFactory.Create(ExtractBeginString(msgstr).Obj, GetMsgType(msgstr), grpNoFld.Tag);
 
                     //If above failed (shouldn't ever happen), just use a generic Group.
                     if (grp == null)
                         grp = new Group(grpNoFld.Tag, grpEntryDelimiterTag);
                 }
-                else if (!groupDD.IsField(f.Tag))
+                else if (!groupSpec.IsField(f.Tag))
                 {
                     // This field is not in the group, thus the repeating group is done.
                     if (grp is not null)
@@ -570,7 +569,7 @@ namespace QuickFix.Message
                     }
                     return grpPos;
                 }
-                else if (groupDD.IsField(f.Tag) && grp != null && grp.IsSetField(f.Tag))
+                else if (groupSpec.IsField(f.Tag) && grp != null && grp.IsSetField(f.Tag))
                 {
                     // Tag is appearing for the second time within a group element.
                     // Presumably the sender didn't set the delimiter (or their DD has a different delimiter).
@@ -585,10 +584,10 @@ namespace QuickFix.Message
 
                 // f is just a field in our group entry.  Add it and iterate again.
                 grp.SetField(f);
-                if (groupDD.IsGroup(f.Tag))
+                if (groupSpec.IsGroup(f.Tag))
                 {
                     // f is a counter for a nested group.  Recurse!
-                    pos = SetGroup(f, msg, pos, grp, groupDD.GetGroupSpec(f.Tag), sessionDataDictionary, appDD, msgFactory);
+                    pos = SetGroup(f, msgstr, pos, grp, groupSpec, msgFactory);
                 }
             }
 
@@ -724,37 +723,37 @@ namespace QuickFix.Message
             {
                 string onBehalfOfCompID = header.GetString(Tags.OnBehalfOfCompID);
                 if (onBehalfOfCompID.Length > 0)
-                    this.Header.SetField(new DeliverToCompID(onBehalfOfCompID));
+                    Header.SetField(new DeliverToCompID(onBehalfOfCompID));
             }
 
             if (header.IsSetField(Tags.OnBehalfOfSubID))
             {
                 string onBehalfOfSubID = header.GetString(Tags.OnBehalfOfSubID);
                 if (onBehalfOfSubID.Length > 0)
-                    this.Header.SetField(new DeliverToSubID(onBehalfOfSubID));
+                    Header.SetField(new DeliverToSubID(onBehalfOfSubID));
             }
 
             if (header.IsSetField(Tags.DeliverToCompID))
             {
                 string deliverToCompID = header.GetString(Tags.DeliverToCompID);
                 if (deliverToCompID.Length > 0)
-                    this.Header.SetField(new OnBehalfOfCompID(deliverToCompID));
+                    Header.SetField(new OnBehalfOfCompID(deliverToCompID));
             }
 
             if (header.IsSetField(Tags.DeliverToSubID))
             {
                 string deliverToSubID = header.GetString(Tags.DeliverToSubID);
                 if (deliverToSubID.Length > 0)
-                    this.Header.SetField(new OnBehalfOfSubID(deliverToSubID));
+                    Header.SetField(new OnBehalfOfSubID(deliverToSubID));
             }
         }
 
         public int CheckSum()
         {
-            return (
+            return
                 (Header.CalculateTotal()
                 + CalculateTotal()
-                + Trailer.CalculateTotal()) % 256);
+                + Trailer.CalculateTotal()) % 256;
         }
 
         public bool IsAdmin()
@@ -817,17 +816,17 @@ namespace QuickFix.Message
         internal Message ClearAndInitialize(string beginString, string msgType)
         {
             _invalidField = 0;
-            this.Header.Clear();
-            this.Header.SetWithReusableField(Tags.BeginString, beginString);
-            this.Header.SetWithReusableField(Tags.MsgType, msgType);
+            Header.Clear();
+            Header.SetWithReusableField(Tags.BeginString, beginString);
+            Header.SetWithReusableField(Tags.MsgType, msgType);
 
             base.Clear();
-            this.Trailer.Clear();
+            Trailer.Clear();
             _isValid = true;
             return this;
         }
 
-        private Object lock_ToString = new Object();
+        private object lock_ToString = new object();
         public override string ToString()
         {
             return ToString(false);
@@ -859,13 +858,13 @@ namespace QuickFix.Message
             lock (lock_ToString)
             {
                 _bodyLength.setValue(BodyLength());
-                this.Header.SetField(_bodyLength);
+                Header.SetField(_bodyLength);
                 _checkSum.setValue(Fields.Converters.CheckSumConverter.Convert(CheckSum()));
-                this.Trailer.SetField(_checkSum);
+                Trailer.SetField(_checkSum);
                 _toStringBuilder.Clear();
-                this.Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                Header.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
-                this.Trailer.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
+                Trailer.CalculateString(orderBodyPostFieldOrder, _toStringBuilder);
                 return _toStringBuilder;
             }
         }
@@ -919,7 +918,7 @@ namespace QuickFix.Message
             // Non-Group Fields
             foreach (var (_, field) in fields)
             {
-                if (QuickFix.Fields.CheckSum.TAG == field.Tag)
+                if (Fields.CheckSum.TAG == field.Tag)
                     continue; // FIX JSON Encoding does not include CheckSum
 
                 if (numInGroupTagList.Contains(field.Tag))

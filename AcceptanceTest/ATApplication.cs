@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using QuickFix;
+using QuickFix.Message;
 
 namespace AcceptanceTest
 {

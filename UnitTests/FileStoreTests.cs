@@ -10,7 +10,7 @@ namespace UnitTests
     [TestFixture]
     public class FileStoreTests
     {
-        private FileStore _store;
+        private QuickFix.Store.IMessageStore _store;
         private FileStoreFactory _factory;
 
         private QuickFix.SessionSettings _settings;
@@ -37,7 +37,7 @@ namespace UnitTests
             _settings.Set(_sessionID, config);
             _factory = new FileStoreFactory(_settings);
 
-            _store = (QuickFix.FileStoreAsync)_factory.Create(_sessionID);
+            _store = (QuickFix.Store.FileStoreAsync)_factory.Create(_sessionID);
         }
 
         void RebuildStore()
@@ -48,7 +48,7 @@ namespace UnitTests
                 _store.Dispose();
             }
 
-            _store = (QuickFix.FileStoreAsync)_factory.Create(_sessionID);
+            _store = (QuickFix.Store.FileStoreAsync)_factory.Create(_sessionID);
         }
 
 
@@ -63,10 +63,10 @@ namespace UnitTests
         public void TestPrefixForSessionWithSubsAndLoc()
         {
             QuickFix.SessionID sessionIDWithSubsAndLocation = new QuickFix.SessionID("FIX.4.2", "SENDERCOMP", "SENDERSUB", "SENDERLOC", "TARGETCOMP", "TARGETSUB", "TARGETLOC");
-            Assert.That(FileStore.Prefix(sessionIDWithSubsAndLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB_SENDERLOC-TARGETCOMP_TARGETSUB_TARGETLOC"));
+            Assert.That(QuickFix.FileStore.Prefix(sessionIDWithSubsAndLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB_SENDERLOC-TARGETCOMP_TARGETSUB_TARGETLOC"));
 
             QuickFix.SessionID sessionIDWithSubsNoLocation = new QuickFix.SessionID("FIX.4.2", "SENDERCOMP", "SENDERSUB", "TARGETCOMP", "TARGETSUB");
-            Assert.That(FileStore.Prefix(sessionIDWithSubsNoLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB-TARGETCOMP_TARGETSUB"));
+            Assert.That(QuickFix.FileStore.Prefix(sessionIDWithSubsNoLocation), Is.EqualTo("FIX.4.2-SENDERCOMP_SENDERSUB-TARGETCOMP_TARGETSUB"));
         }
 
         [Test]

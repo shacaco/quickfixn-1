@@ -1,5 +1,4 @@
-﻿
-namespace QuickFix
+﻿namespace QuickFix
 {
     /// <summary>
     /// Application implementation that does not do anything.
