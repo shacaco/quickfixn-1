@@ -391,7 +391,7 @@ namespace QuickFix.Message
             bool expectingBody = true;
             int count = 0;
             int pos = 0;
-            IFieldMapSpec msgMap = null;
+            IFieldMapSpec? msgMap = null;
             while (pos < msgstr.Length)
             {
                 StringField? f = null;
@@ -579,7 +579,7 @@ namespace QuickFix.Message
             while (pos < msgstr.Length)
             {
                 grpPos = pos;
-                StringField f = ExtractField(msgstr, ref pos, ReusableFields.GetNextReusableStringField());
+                StringField f = ExtractField(msgstr, ref pos, null);
                 if (f.Tag == grpEntryDelimiterTag)
                 {
                     // This is the start of a group entry.
@@ -591,12 +591,8 @@ namespace QuickFix.Message
                     }
 
                     // Create a new group!
-                    if (msgFactory != null)
-                        grp = msgFactory.Create(ExtractBeginString(msgstr).Obj, GetMsgType(msgstr), grpNoFld.Tag);
-
-                    //If above failed (shouldn't ever happen), just use a generic Group.
-                    if (grp == null)
-                        grp = new Group(grpNoFld.Tag, grpEntryDelimiterTag);
+                    grp = msgFactory?.Create(ExtractBeginString(msgstr).Obj, GetMsgType(msgstr), grpNoFld.Tag)
+                          ?? new Group(grpNoFld.Tag, grpEntryDelimiterTag);
                 }
                 else if (!groupSpec.IsField(f.Tag))
                 {
@@ -625,7 +621,7 @@ namespace QuickFix.Message
                 if (groupSpec.IsGroup(f.Tag))
                 {
                     // f is a counter for a nested group.  Recurse!
-                    pos = SetGroup(f, msgstr, pos, grp, groupSpec, msgFactory);
+                    pos = SetGroup(f, msgstr, pos, grp, groupSpec.GetGroupSpec(f.Tag), msgFactory);
                 }
             }
 
@@ -858,7 +854,6 @@ namespace QuickFix.Message
             Header.SetWithReusableField(Tags.BeginString, beginString);
             Header.SetWithReusableField(Tags.MsgType, msgType);
 
-            _isValid = true;
             return this;
         }
 
@@ -960,7 +955,7 @@ namespace QuickFix.Message
             IList<IField> numInGroupFieldList = new List<IField>();
 
             // Non-Group Fields
-            foreach (var (_, field) in fields)
+            foreach (var (_, field) in fields.OrderBy(f=>f.Key))
             {
                 if (Fields.CheckSum.TAG == field.Tag)
                     continue; // FIX JSON Encoding does not include CheckSum
