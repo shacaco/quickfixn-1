@@ -294,9 +294,9 @@ namespace QuickFix.Store
                     }
 
                     SeqMsgBuffer.Remove(0, 10);
-                    SeqMsgBuffer.Insert(0, NextSenderMsgSeqNum.ToString("D10"));
+                    SeqMsgBuffer.Insert(0, NextSenderMsgSeqNum.ToString("D20"));
                     SeqMsgBuffer.Remove(13, 10);
-                    SeqMsgBuffer.Insert(13, NextTargetMsgSeqNum.ToString("D10"));
+                    SeqMsgBuffer.Insert(13, NextTargetMsgSeqNum.ToString("D20"));
 
                     seqNumsWriter_.BaseStream.Seek(0, SeekOrigin.Begin);
                     seqNumsWriter_.Write(SeqMsgBuffer.ToString());

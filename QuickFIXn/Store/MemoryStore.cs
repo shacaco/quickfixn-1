@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace QuickFix
+namespace QuickFix.Store
 {
     /// <summary>
     /// In-memory message store implementation

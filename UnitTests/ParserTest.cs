@@ -145,7 +145,7 @@ namespace UnitTests
             string fixMsg = "8=TEST\x01" + "9=TEST\x01" + "35=TEST\x01" + "49=SS1\x01" + "56=RORE\x01" + "34=3\x01" + "52=20050222-16:45:53\x01" + "10=TEST\x01";
 
             Parser parser = new Parser();
-          //  parser.AddToStream(fixMsg);
+            parser.AddToStream(StrToBytes(fixMsg));
             parser.AddToStream(StrToBytes(normalLength));
 
             Assert.Throws<QuickFix.MessageParseError>(delegate { parser.ReadFixMessage(out _); });

@@ -96,7 +96,40 @@ namespace QuickFix.Message
             return f;
         }
 
-        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, StringField field = null)
+        public static int ExtractFieldTag(ReadOnlySpan<char> msg, int pos)
+        {
+            int tagend = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal) + pos;
+            int tag = int.Parse(msg.Slice(pos, tagend - pos));
+            return tag;
+        }
+
+        public static StringField ExtractDataField(ReadOnlySpan<char> msg, int dataLength, ref int pos)
+        {
+            try
+            {
+                int tagend = msg.Slice(pos).IndexOf(Equal, StringComparison.Ordinal) + pos;
+                int tag = int.Parse(msg.Slice(pos, tagend - pos));
+                pos = tagend + 1;
+                StringField field = new StringField(tag, msg.Slice(pos, dataLength).ToString());
+
+                pos += dataLength + 1;
+                return field;
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                throw new MessageParseError($"Error at position ({pos}) while parsing msg ({msg})", e);
+            }
+            catch (OverflowException e)
+            {
+                throw new MessageParseError($"Error at position ({pos}) while parsing msg ({msg})", e);
+            }
+            catch (FormatException e)
+            {
+                throw new MessageParseError($"Error at position ({pos}) while parsing msg ({msg})", e);
+            }
+        }
+
+        public static StringField ExtractField(ReadOnlySpan<char> msg, ref int pos, StringField? field)
         {
             try
             {
@@ -126,7 +159,7 @@ namespace QuickFix.Message
 
         public static StringField ExtractField(ReadOnlySpan<char> msgstr, ref int pos)
         {
-            return ExtractField(msgstr, ref pos);
+            return ExtractField(msgstr, ref pos, null);
         }
 
         public static StringField ExtractBeginString(ReadOnlySpan<char> msgstr, StringField reusableField = null)
@@ -367,7 +400,18 @@ namespace QuickFix.Message
             IFieldMapSpec msgMap = null;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, ReusableFields.GetNextReusableStringField());
+                StringField? f = null;
+
+                int fieldTag = ExtractFieldTag(msgstr, pos);
+                if (fieldTag == Tags.XmlData)
+                {
+                    if (IsHeaderField(Tags.XmlDataLen))
+                        f = ExtractDataField(msgstr, Header.GetInt(Tags.XmlDataLen), ref pos);
+                    else if (IsSetField(Tags.XmlDataLen))
+                        f = ExtractDataField(msgstr, GetInt(Tags.XmlDataLen), ref pos);
+                }
+
+                f ??= ExtractField(msgstr, ref pos, ReusableFields.GetNextReusableStringField());
 
                 if (validate && count < 3 && Header.HEADER_FIELD_ORDER[count++] != f.Tag)
                     throw new InvalidMessage("Header fields out of order");
@@ -390,7 +434,7 @@ namespace QuickFix.Message
                             }
                     }
 
-                    if (!Header.SetField(f, true))
+                    if (!Header.SetField(f, false))
                         Header.RepeatedTags.Add(f);
 
                     if (sessionDD is not null && sessionDD.Header.IsGroup(f.Tag))
@@ -815,15 +859,21 @@ namespace QuickFix.Message
 
         internal Message ClearAndInitialize(string beginString, string msgType)
         {
-            _invalidField = 0;
-            Header.Clear();
+            Clear();
+
             Header.SetWithReusableField(Tags.BeginString, beginString);
             Header.SetWithReusableField(Tags.MsgType, msgType);
 
-            base.Clear();
-            Trailer.Clear();
             _isValid = true;
             return this;
+        }
+
+        public override void Clear()
+        {
+            _invalidField = 0;
+            Header.Clear();
+            base.Clear();
+            Trailer.Clear();
         }
 
         private object lock_ToString = new object();

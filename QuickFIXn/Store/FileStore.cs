@@ -1,314 +1,321 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Text;
-using QuickFix.Store;
 using QuickFix.Util;
 
-namespace QuickFix
+namespace QuickFix.Store;
+
+/// <summary>
+/// File store implementation
+/// </summary>
+public class FileStore : IMessageStore
 {
-    /// <summary>
-    /// File store implementation
-    /// </summary>
-    public class FileStore : IMessageStore
+    private class MsgDef
     {
-        private class MsgDef
+        public long Index { get; }
+        public int Size { get; }
+
+        public MsgDef(long index, int size)
         {
-            public long index { get; private set; }
-            public int size { get; private set; }
-
-            public MsgDef(long index, int size)
-            {
-                this.index = index;
-                this.size = size;
-            }
+            Index = index;
+            Size = size;
         }
-
-        private string seqNumsFileName_;
-        private string msgFileName_;
-        private string headerFileName_;
-        private string sessionFileName_;
-
-        private System.IO.FileStream seqNumsFile_;
-        private System.IO.FileStream msgFile_;
-        private System.IO.StreamWriter headerFile_;
-        private readonly byte[] _writeBuffer = new byte[1024];
-        private MemoryStore cache_ = new MemoryStore();
-
-        System.Collections.Generic.Dictionary<SeqNumType, MsgDef> offsets_ = new Dictionary<SeqNumType, MsgDef>();
-
-        public static string Prefix(SessionID sessionID)
-        {
-            System.Text.StringBuilder prefix = new System.Text.StringBuilder(sessionID.BeginString)
-                .Append('-').Append(sessionID.SenderCompID);
-            if (SessionID.IsSet(sessionID.SenderSubID))
-                prefix.Append('_').Append(sessionID.SenderSubID);
-            if (SessionID.IsSet(sessionID.SenderLocationID))
-                prefix.Append('_').Append(sessionID.SenderLocationID);
-            prefix.Append('-').Append(sessionID.TargetCompID);
-            if (SessionID.IsSet(sessionID.TargetSubID))
-                prefix.Append('_').Append(sessionID.TargetSubID);
-            if (SessionID.IsSet(sessionID.TargetLocationID))
-                prefix.Append('_').Append(sessionID.TargetLocationID);
-
-            if (SessionID.IsSet(sessionID.SessionQualifier))
-                prefix.Append('-').Append(sessionID.SessionQualifier);
-
-            return prefix.ToString();
-        }
-
-        public FileStore(string path, SessionID sessionID)
-        {
-            if (!System.IO.Directory.Exists(path))
-                System.IO.Directory.CreateDirectory(path);
-
-            string prefix = Prefix(sessionID);
-
-            seqNumsFileName_ = System.IO.Path.Combine(path, prefix + ".seqnums");
-            msgFileName_ = System.IO.Path.Combine(path, prefix + ".body");
-            headerFileName_ = System.IO.Path.Combine(path, prefix + ".header");
-            sessionFileName_ = System.IO.Path.Combine(path, prefix + ".session");
-            open();
-        }
-
-        private void open()
-        {
-            close();
-
-            ConstructFromFileCache();
-            InitializeSessionCreateTime();
-
-            seqNumsFile_ = new System.IO.FileStream(seqNumsFileName_, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
-            msgFile_ = new System.IO.FileStream(msgFileName_, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
-            headerFile_ = new System.IO.StreamWriter(headerFileName_, true);
-        }
-
-        private void close()
-        {
-            seqNumsFile_?.Dispose();
-            msgFile_?.Dispose();
-            headerFile_?.Dispose();
-        }
-
-        private void PurgeSingleFile(System.IO.Stream stream, string filename)
-        {
-            if (stream != null)
-                stream.Close();
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
-        }
-
-        private void PurgeSingleFile(System.IO.StreamWriter stream, string filename)
-        {
-            if (stream != null)
-                stream.Close();
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
-        }
-
-        private void PurgeSingleFile(string filename)
-        {
-            if (System.IO.File.Exists(filename))
-                System.IO.File.Delete(filename);
-        }
-
-        private void PurgeFileCache()
-        {
-            PurgeSingleFile(seqNumsFile_, seqNumsFileName_);
-            PurgeSingleFile(msgFile_, msgFileName_);
-            PurgeSingleFile(headerFile_, headerFileName_);
-            PurgeSingleFile(sessionFileName_);
-        }
-
-
-        private void ConstructFromFileCache()
-        {
-            offsets_.Clear();
-            if (System.IO.File.Exists(headerFileName_))
-            {
-                using (System.IO.StreamReader reader = new System.IO.StreamReader(headerFileName_))
-                {
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        string[] headerParts = line.Split(',');
-                        if (headerParts.Length == 3)
-                        {
-                            offsets_[Convert.ToUInt64(headerParts[0])] = new MsgDef(
-                                Convert.ToInt64(headerParts[1]), Convert.ToInt32(headerParts[2]));
-                        }
-                    }
-                }
-            }
-
-            if (System.IO.File.Exists(seqNumsFileName_))
-            {
-                using (System.IO.StreamReader seqNumReader = new System.IO.StreamReader(seqNumsFileName_))
-                {
-                    string[] parts = seqNumReader.ReadToEnd().Split(':');
-                    if (parts.Length == 2)
-                    {
-                        cache_.NextSenderMsgSeqNum = Convert.ToUInt64(parts[0]);
-                        cache_.NextTargetMsgSeqNum = Convert.ToUInt64(parts[1]);
-                    }
-                }
-            }
-        }
-
-        private void InitializeSessionCreateTime()
-        {
-            if (System.IO.File.Exists(sessionFileName_) && new System.IO.FileInfo(sessionFileName_).Length > 0)
-            {
-                using (System.IO.StreamReader reader = new System.IO.StreamReader(sessionFileName_))
-                {
-                    string s = reader.ReadToEnd();
-                    cache_.CreationTime = UtcDateTimeSerializer.FromString(s);
-                }
-            }
-            else
-            {
-                using (System.IO.StreamWriter writer = new System.IO.StreamWriter(sessionFileName_, false))
-                {
-                    writer.Write(UtcDateTimeSerializer.ToString(cache_.CreationTime.Value));
-                }
-            }
-        }
-
-
-        #region MessageStore Members
-
-        /// <summary>
-        /// Get messages within the range of sequence numbers
-        /// </summary>
-        /// <param name="startSeqNum"></param>
-        /// <param name="endSeqNum"></param>
-        /// <param name="messages"></param>
-        public void Get(SeqNumType startSeqNum, SeqNumType endSeqNum, List<string> messages)
-        {
-            for (SeqNumType i = startSeqNum; i <= endSeqNum; i++)
-            {
-                if (offsets_.ContainsKey(i))
-                {
-                    msgFile_.Seek(offsets_[i].index, System.IO.SeekOrigin.Begin);
-                    byte[] msgBytes = new byte[offsets_[i].size];
-                    msgFile_.Read(msgBytes, 0, msgBytes.Length);
-
-                    messages.Add(CharEncoding.DefaultEncoding.GetString(msgBytes));
-                }
-            }
-
-        }
-
-        /// <summary>
-        /// Store a message
-        /// </summary>
-        /// <param name="msgSeqNum"></param>
-        /// <param name="msg"></param>
-        /// <returns></returns>
-        public bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg)
-        {
-            msgFile_.Seek(0, System.IO.SeekOrigin.End);
-
-            long offset = msgFile_.Position;
-            var length = CharEncoding.DefaultEncoding.GetBytes(msg, _writeBuffer);
-
-            StringBuilder b = new StringBuilder();
-            b.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
-            headerFile_.WriteLine(b.ToString());
-            headerFile_.Flush();
-
-            offsets_[msgSeqNum] = new MsgDef(offset, length);
-
-            msgFile_.Write(_writeBuffer, 0, length);
-            msgFile_.Flush();
-
-
-            return true;
-        }
-
-        public SeqNumType NextSenderMsgSeqNum
-        {
-            get { return cache_.NextSenderMsgSeqNum; }
-            set
-            {
-                cache_.NextSenderMsgSeqNum = value;
-                setSeqNum();
-            }
-        }
-
-        public SeqNumType NextTargetMsgSeqNum
-        {
-            get { return cache_.NextTargetMsgSeqNum; }
-            set
-            {
-                cache_.NextTargetMsgSeqNum = value;
-                setSeqNum();
-            }
-        }
-
-        public void IncrNextSenderMsgSeqNum()
-        {
-            cache_.IncrNextSenderMsgSeqNum();
-            setSeqNum();
-        }
-
-        public void IncrNextTargetMsgSeqNum()
-        {
-            cache_.IncrNextTargetMsgSeqNum();
-            setSeqNum();
-        }
-
-        private void setSeqNum()
-        {
-            seqNumsFile_.Seek(0, System.IO.SeekOrigin.Begin);
-            System.IO.StreamWriter writer = new System.IO.StreamWriter(seqNumsFile_);
-
-            writer.Write(NextSenderMsgSeqNum.ToString("D10") + " : " + NextTargetMsgSeqNum.ToString("D10") + "  ");
-            writer.Flush();
-        }
-
-        public DateTime? CreationTime
-        {
-            get
-            {
-                return cache_.CreationTime;
-            }
-        }
-
-        public void Reset()
-        {
-            cache_.Reset();
-            PurgeFileCache();
-            open();
-        }
-
-        public void Refresh()
-        {
-            cache_.Reset();
-            open();
-        }
-
-        #endregion
-
-        #region IDisposable Members
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-
-        }
-        private bool _disposed = false;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-            if (disposing)
-            {
-                close();
-            }
-            _disposed = true;
-        }
-
-        ~FileStore() => Dispose(false);
-        #endregion
     }
+
+    private readonly string _seqNumsFileName;
+    private readonly string _msgFileName;
+    private readonly string _headerFileName;
+    private readonly string _sessionFileName;
+
+    private System.IO.FileStream _seqNumsFile;
+    private System.IO.FileStream _msgFile;
+    private System.IO.StreamWriter _headerFile;
+
+    private readonly MemoryStore _cache = new();
+
+    private readonly Dictionary<SeqNumType, MsgDef> _offsets = new();
+
+    public static string Prefix(SessionID sessionId)
+    {
+        StringBuilder prefix = new StringBuilder(sessionId.BeginString)
+            .Append('-').Append(sessionId.SenderCompID);
+        if (SessionID.IsSet(sessionId.SenderSubID))
+            prefix.Append('_').Append(sessionId.SenderSubID);
+        if (SessionID.IsSet(sessionId.SenderLocationID))
+            prefix.Append('_').Append(sessionId.SenderLocationID);
+        prefix.Append('-').Append(sessionId.TargetCompID);
+        if (SessionID.IsSet(sessionId.TargetSubID))
+            prefix.Append('_').Append(sessionId.TargetSubID);
+        if (SessionID.IsSet(sessionId.TargetLocationID))
+            prefix.Append('_').Append(sessionId.TargetLocationID);
+
+        if (SessionID.IsSet(sessionId.SessionQualifier))
+            prefix.Append('-').Append(sessionId.SessionQualifier);
+
+        return prefix.ToString();
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="path">
+    /// All back or forward slashes in this path will be converted as needed to the running platform's preferred
+    /// path separator (i.e. "/" will become "\" on windows, else "\" will become "/" on all other platforms)
+    /// </param>
+    /// <param name="sessionId"></param>
+    public FileStore(string path, SessionID sessionId)
+    {
+        string normalizedPath = StringUtil.FixSlashes(path);
+
+        if (!System.IO.Directory.Exists(normalizedPath))
+            System.IO.Directory.CreateDirectory(normalizedPath);
+
+        string prefix = Prefix(sessionId);
+
+        _seqNumsFileName = System.IO.Path.Combine(normalizedPath, prefix + ".seqnums");
+        _msgFileName = System.IO.Path.Combine(normalizedPath, prefix + ".body");
+        _headerFileName = System.IO.Path.Combine(normalizedPath, prefix + ".header");
+        _sessionFileName = System.IO.Path.Combine(normalizedPath, prefix + ".session");
+
+        // The compiler isn't smart enough to see that Open() initializes these 3 vars,
+        // but we can use "= null!" to make it accept that these are non-null
+        _seqNumsFile = null!;
+        _msgFile = null!;
+        _headerFile = null!;
+        Open();
+    }
+
+    private void Open()
+    {
+        Close();
+
+        ConstructFromFileCache();
+        InitializeSessionCreateTime();
+
+        _seqNumsFile = new System.IO.FileStream(_seqNumsFileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
+        _msgFile = new System.IO.FileStream(_msgFileName, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite);
+        _headerFile = new System.IO.StreamWriter(_headerFileName, true);
+    }
+
+    private void Close()
+    {
+        // these vars will be null only during construction (ctor()->Open()->Close())
+        _seqNumsFile?.Dispose();
+        _msgFile?.Dispose();
+        _headerFile?.Dispose();
+    }
+
+    private static void PurgeSingleFile(System.IO.Stream stream, string filename)
+    {
+        stream.Close();
+        if (System.IO.File.Exists(filename))
+            System.IO.File.Delete(filename);
+    }
+
+    private static void PurgeSingleFile(System.IO.StreamWriter stream, string filename)
+    {
+        stream.Close();
+        if (System.IO.File.Exists(filename))
+            System.IO.File.Delete(filename);
+    }
+
+    private static void PurgeSingleFile(string filename)
+    {
+        if (System.IO.File.Exists(filename))
+            System.IO.File.Delete(filename);
+    }
+
+    private void PurgeFileCache()
+    {
+        PurgeSingleFile(_seqNumsFile, _seqNumsFileName);
+        PurgeSingleFile(_msgFile, _msgFileName);
+        PurgeSingleFile(_headerFile, _headerFileName);
+        PurgeSingleFile(_sessionFileName);
+    }
+
+
+    private void ConstructFromFileCache()
+    {
+        _offsets.Clear();
+        if (System.IO.File.Exists(_headerFileName))
+        {
+            using (System.IO.StreamReader reader = new System.IO.StreamReader(_headerFileName))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    string[] headerParts = line.Split(',');
+                    if (headerParts.Length == 3)
+                    {
+                        _offsets[Convert.ToUInt64(headerParts[0])] = new MsgDef(
+                            Convert.ToInt64(headerParts[1]), Convert.ToInt32(headerParts[2]));
+                    }
+                }
+            }
+        }
+
+        if (System.IO.File.Exists(_seqNumsFileName))
+        {
+            using (System.IO.StreamReader seqNumReader = new System.IO.StreamReader(_seqNumsFileName))
+            {
+                string[] parts = seqNumReader.ReadToEnd().Split(':');
+                if (parts.Length == 2)
+                {
+                    _cache.NextSenderMsgSeqNum = Convert.ToUInt64(parts[0]);
+                    _cache.NextTargetMsgSeqNum = Convert.ToUInt64(parts[1]);
+                }
+            }
+        }
+    }
+
+    private void InitializeSessionCreateTime()
+    {
+        if (System.IO.File.Exists(_sessionFileName) && new System.IO.FileInfo(_sessionFileName).Length > 0)
+        {
+            using (System.IO.StreamReader reader = new System.IO.StreamReader(_sessionFileName))
+            {
+                string s = reader.ReadToEnd();
+                _cache.CreationTime = UtcDateTimeSerializer.FromString(s);
+            }
+        }
+        else
+        {
+            using (System.IO.StreamWriter writer = new System.IO.StreamWriter(_sessionFileName, false))
+            {
+                writer.Write(UtcDateTimeSerializer.ToString(_cache.CreationTime ?? new DateTime()));
+            }
+        }
+    }
+
+
+    #region MessageStore Members
+
+    /// <summary>
+    /// Get messages within the range of sequence numbers
+    /// </summary>
+    /// <param name="startSeqNum"></param>
+    /// <param name="endSeqNum"></param>
+    /// <param name="messages"></param>
+    public void Get(SeqNumType startSeqNum, SeqNumType endSeqNum, List<string> messages)
+    {
+        for (SeqNumType i = startSeqNum; i <= endSeqNum; i++)
+        {
+            if (_offsets.ContainsKey(i))
+            {
+                _msgFile.Seek(_offsets[i].Index, System.IO.SeekOrigin.Begin);
+                byte[] msgBytes = new byte[_offsets[i].Size];
+                _msgFile.Read(msgBytes, 0, msgBytes.Length);
+
+                messages.Add(CharEncoding.DefaultEncoding.GetString(msgBytes));
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Store a message
+    /// </summary>
+    /// <param name="msgSeqNum"></param>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    public bool Set(SeqNumType msgSeqNum, ReadOnlySpan<char> msg)
+    {
+        _msgFile.Seek(0, System.IO.SeekOrigin.End);
+
+        Span<byte> buffer =  stackalloc byte[msg.Length * 2];
+        long offset = _msgFile.Position;
+        var size = CharEncoding.DefaultEncoding.GetBytes(msg, buffer);
+
+        StringBuilder b = new StringBuilder();
+        b.Append(msgSeqNum).Append(',').Append(offset).Append(',').Append(size);
+        _headerFile.WriteLine(b.ToString());
+        _headerFile.Flush();
+
+        _offsets[msgSeqNum] = new MsgDef(offset, size);
+
+        _msgFile.Write(buffer.Slice(0, size));
+        _msgFile.Flush();
+
+
+        return true;
+    }
+
+    public SeqNumType NextSenderMsgSeqNum
+    {
+        get => _cache.NextSenderMsgSeqNum;
+        set
+        {
+            _cache.NextSenderMsgSeqNum = value;
+            SetSeqNum();
+        }
+    }
+
+    public SeqNumType NextTargetMsgSeqNum
+    {
+        get => _cache.NextTargetMsgSeqNum;
+        set
+        {
+            _cache.NextTargetMsgSeqNum = value;
+            SetSeqNum();
+        }
+    }
+
+    public void IncrNextSenderMsgSeqNum()
+    {
+        _cache.IncrNextSenderMsgSeqNum();
+        SetSeqNum();
+    }
+
+    public void IncrNextTargetMsgSeqNum()
+    {
+        _cache.IncrNextTargetMsgSeqNum();
+        SetSeqNum();
+    }
+
+    private void SetSeqNum()
+    {
+        _seqNumsFile.Seek(0, System.IO.SeekOrigin.Begin);
+        System.IO.StreamWriter writer = new System.IO.StreamWriter(_seqNumsFile);
+
+        writer.Write(NextSenderMsgSeqNum.ToString("D20") + " : " + NextTargetMsgSeqNum.ToString("D20") + "  ");
+        writer.Flush();
+    }
+
+    public DateTime? CreationTime => _cache.CreationTime;
+
+    public void Reset()
+    {
+        _cache.Reset();
+        PurgeFileCache();
+        Open();
+    }
+
+    public void Refresh()
+    {
+        _cache.Reset();
+        Open();
+    }
+
+    #endregion
+
+    #region IDisposable Members
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    private bool _disposed = false;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+        if (disposing)
+        {
+            Close();
+        }
+        _disposed = true;
+    }
+
+    ~FileStore() => Dispose(false);
+    #endregion
 }
