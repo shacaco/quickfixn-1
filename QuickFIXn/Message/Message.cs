@@ -30,7 +30,6 @@ namespace QuickFix.Message
 
         public Header Header { get; }
         public Trailer Trailer { get; }
-        public DD? ApplicationDataDictionary { get; private set; }
 
         #region Constructors
 
@@ -49,14 +48,12 @@ namespace QuickFix.Message
         public Message(string msgstr, DD dataDictionary, bool validate)
             : this()
         {
-            ApplicationDataDictionary = dataDictionary;
             FromString(msgstr, validate, dataDictionary, dataDictionary, null);
         }
 
         public Message(string msgstr, DD sessionDataDictionary, DD appDD, bool validate)
             : this()
         {
-            ApplicationDataDictionary = appDD;
             FromStringHeader(msgstr);
             if (IsAdmin())
                 FromString(msgstr, validate, sessionDataDictionary, appDD, null);
@@ -354,7 +351,6 @@ namespace QuickFix.Message
         /// <param name="appDD"></param>
         public void FromString(ReadOnlySpan<char> msg, bool validate, DD sessionDD, DD appDD)
         {
-            ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, null);
         }
 
@@ -370,7 +366,6 @@ namespace QuickFix.Message
         public void FromString(ReadOnlySpan<char> msg, bool validate,
             DD sessionDD, DD appDD, IMessageFactory msgFactory)
         {
-            ApplicationDataDictionary = appDD;
             FromString(msg, validate, sessionDD, appDD, msgFactory, false);
         }
 
@@ -391,7 +386,6 @@ namespace QuickFix.Message
             bool ignoreBody)
         {
             Clear();
-            ApplicationDataDictionary = appDD;
 
             bool expectingHeader = true;
             bool expectingBody = true;

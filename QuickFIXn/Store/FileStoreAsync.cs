@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
-using QuickFix.Fields;
 using QuickFix.Util;
 using Utils;
 
@@ -19,39 +18,37 @@ namespace QuickFix.Store
 
         private struct MsgDef
         {
-            public long index { get; internal set; }
-            public int size { get; internal set; }
+            public long Index { get; }
+            public int Size { get; }
 
             public MsgDef(long index, int size)
             {
-                this.index = index;
-                this.size = size;
+                Index = index;
+                Size = size;
             }
         }
 
-        private readonly object _lock = new object();
-        private string seqNumsFileName_;
-        private string msgFileName_;
-        private string headerFileName_;
-        private string sessionFileName_;
+        private readonly object _lock = new();
+        private readonly string _seqNumsFileName;
+        private readonly string _msgFileName;
+        private readonly string _headerFileName;
+        private readonly string _sessionFileName;
 
-        private FileStream msgFile_;
-        private StreamWriter headerFile_;
-        private StreamWriter seqNumsWriter_;
-        private readonly byte[] _writeBuffer = new byte[1024];
-        private MemoryStore cache_ = new MemoryStore();
-        private Dictionary<SeqNumType, MsgDef> offsets_ = new Dictionary<SeqNumType, MsgDef>();
+        private FileStream _msgFile;
+        private StreamWriter _headerFile;
+        private StreamWriter _seqNumsWriter;
 
-        private bool _abortTask;
+        private readonly MemoryStore _cache = new();
+        private readonly Dictionary<SeqNumType, MsgDef> _offsets = new();
 
-        private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
-        private string _lastSequence;
-        private ConcurrentQueue<ValueTuple<string, SeqNumType>> _setsToWrite = new ConcurrentQueue<ValueTuple<string, SeqNumType>>();
-        private readonly StringBuilder SeqMsgBuffer = new StringBuilder(0.ToString("D10") + " : " + 0.ToString("D10") + " ");
-        private readonly StringBuilder _setBuffer = new StringBuilder();
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+
+        private readonly AutoResetEvent _autoResetEvent = new(false);
+        private readonly ConcurrentQueue<ValueTuple<string, SeqNumType>> _setsToWrite = new();
+
         private readonly Thread _setThread;
 
-        public DateTime? CreationTime => cache_.CreationTime;
+        public DateTime? CreationTime => _cache.CreationTime;
 
         public static string Prefix(SessionID sessionID)
         {
@@ -80,10 +77,10 @@ namespace QuickFix.Store
 
             string prefix = Prefix(sessionID);
 
-            seqNumsFileName_ = Path.Combine(path, prefix + ".seqnums");
-            msgFileName_ = Path.Combine(path, prefix + ".body");
-            headerFileName_ = Path.Combine(path, prefix + ".header");
-            sessionFileName_ = Path.Combine(path, prefix + ".session");
+            _seqNumsFileName = Path.Combine(path, prefix + ".seqnums");
+            _msgFileName = Path.Combine(path, prefix + ".body");
+            _headerFileName = Path.Combine(path, prefix + ".header");
+            _sessionFileName = Path.Combine(path, prefix + ".session");
             open();
             _setThread = new Thread(SetSeqNumTask) { IsBackground = true };
             _setThread.Start();
@@ -94,9 +91,9 @@ namespace QuickFix.Store
             ConstructFromFileCache();
             InitializeSessionCreateTime();
 
-            seqNumsWriter_ = new StreamWriter(new FileStream(seqNumsFileName_, FileMode.OpenOrCreate, FileAccess.ReadWrite));
-            msgFile_ = new FileStream(msgFileName_, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            headerFile_ = new StreamWriter(headerFileName_, true);
+            _seqNumsWriter = new StreamWriter(new FileStream(_seqNumsFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite));
+            _msgFile = new FileStream(_msgFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            _headerFile = new StreamWriter(_headerFileName, true);
         }
 
         private void PurgeSingleFile(Stream stream, string filename)
@@ -122,18 +119,18 @@ namespace QuickFix.Store
 
         private void PurgeFileCache()
         {
-            PurgeSingleFile(seqNumsWriter_, seqNumsFileName_);
-            PurgeSingleFile(msgFile_, msgFileName_);
-            PurgeSingleFile(headerFile_, headerFileName_);
-            PurgeSingleFile(sessionFileName_);
+            PurgeSingleFile(_seqNumsWriter, _seqNumsFileName);
+            PurgeSingleFile(_msgFile, _msgFileName);
+            PurgeSingleFile(_headerFile, _headerFileName);
+            PurgeSingleFile(_sessionFileName);
         }
 
         private void ConstructFromFileCache()
         {
-            offsets_.Clear();
-            if (File.Exists(headerFileName_))
+            _offsets.Clear();
+            if (File.Exists(_headerFileName))
             {
-                using (StreamReader reader = new StreamReader(headerFileName_))
+                using (StreamReader reader = new StreamReader(_headerFileName))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
@@ -141,22 +138,22 @@ namespace QuickFix.Store
                         string[] headerParts = line.Split(',');
                         if (headerParts.Length == 3)
                         {
-                            offsets_[Convert.ToUInt64(headerParts[0])] = new MsgDef(
+                            _offsets[Convert.ToUInt64(headerParts[0])] = new MsgDef(
                                 Convert.ToInt64(headerParts[1]), Convert.ToInt32(headerParts[2]));
                         }
                     }
                 }
             }
 
-            if (File.Exists(seqNumsFileName_))
+            if (File.Exists(_seqNumsFileName))
             {
-                using (StreamReader seqNumReader = new StreamReader(seqNumsFileName_))
+                using (StreamReader seqNumReader = new StreamReader(_seqNumsFileName))
                 {
                     string[] parts = seqNumReader.ReadToEnd().Split(':');
                     if (parts.Length == 2)
                     {
-                        cache_.NextSenderMsgSeqNum = Convert.ToUInt64(parts[0]);
-                        cache_.NextTargetMsgSeqNum = Convert.ToUInt64(parts[1]);
+                        _cache.NextSenderMsgSeqNum = Convert.ToUInt64(parts[0]);
+                        _cache.NextTargetMsgSeqNum = Convert.ToUInt64(parts[1]);
                     }
                 }
             }
@@ -164,19 +161,19 @@ namespace QuickFix.Store
 
         private void InitializeSessionCreateTime()
         {
-            if (File.Exists(sessionFileName_) && new FileInfo(sessionFileName_).Length > 0)
+            if (File.Exists(_sessionFileName) && new FileInfo(_sessionFileName).Length > 0)
             {
-                using (StreamReader reader = new StreamReader(sessionFileName_))
+                using (StreamReader reader = new StreamReader(_sessionFileName))
                 {
                     string s = reader.ReadToEnd();
-                    cache_.CreationTime = UtcDateTimeSerializer.FromString(s);
+                    _cache.CreationTime = UtcDateTimeSerializer.FromString(s);
                 }
             }
             else
             {
-                using (StreamWriter writer = new StreamWriter(sessionFileName_, false))
+                using (StreamWriter writer = new StreamWriter(_sessionFileName, false))
                 {
-                    writer.Write(UtcDateTimeSerializer.ToString(cache_.CreationTime.Value));
+                    writer.Write(UtcDateTimeSerializer.ToString(_cache.CreationTime.Value));
                 }
             }
         }
@@ -194,11 +191,11 @@ namespace QuickFix.Store
             lock (_lock)
                 for (ulong i = startSeqNum; i <= endSeqNum; i++)
                 {
-                    if (offsets_.ContainsKey(i))
+                    if (_offsets.ContainsKey(i))
                     {
-                        msgFile_.Seek(offsets_[i].index, SeekOrigin.Begin);
-                        byte[] msgBytes = new byte[offsets_[i].size];
-                        msgFile_.Read(msgBytes, 0, msgBytes.Length);
+                        _msgFile.Seek(_offsets[i].Index, SeekOrigin.Begin);
+                        byte[] msgBytes = new byte[_offsets[i].Size];
+                        _msgFile.Read(msgBytes, 0, msgBytes.Length);
                         var data = CharEncoding.DefaultEncoding.GetString(msgBytes);
                         messages.Add(data);
                     }
@@ -220,33 +217,33 @@ namespace QuickFix.Store
 
         public ulong NextSenderMsgSeqNum
         {
-            get { return cache_.NextSenderMsgSeqNum; }
+            get { return _cache.NextSenderMsgSeqNum; }
             set
             {
-                cache_.NextSenderMsgSeqNum = value;
+                _cache.NextSenderMsgSeqNum = value;
                 setSeqNum();
             }
         }
 
         public ulong NextTargetMsgSeqNum
         {
-            get { return cache_.NextTargetMsgSeqNum; }
+            get { return _cache.NextTargetMsgSeqNum; }
             set
             {
-                cache_.NextTargetMsgSeqNum = value;
+                _cache.NextTargetMsgSeqNum = value;
                 setSeqNum();
             }
         }
 
         public void IncrNextSenderMsgSeqNum()
         {
-            cache_.IncrNextSenderMsgSeqNum();
+            _cache.IncrNextSenderMsgSeqNum();
             setSeqNum();
         }
 
         public void IncrNextTargetMsgSeqNum()
         {
-            cache_.IncrNextTargetMsgSeqNum();
+            _cache.IncrNextTargetMsgSeqNum();
             setSeqNum();
         }
 
@@ -263,11 +260,15 @@ namespace QuickFix.Store
                 ApplicationPrivileges.ThreadPrivileges.SetCurrentThreadPriority(ThreadPriority.Lowest);
             }
 
-            while (true)
+            var writeBuffer = new byte[1024];
+            var setBuffer = new StringBuilder();
+            var seqMsgBuffer = new StringBuilder(0.ToString("D20") + " : " + 0.ToString("D20") + " ");
+
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
                 _autoResetEvent.WaitOne();
 
-                if (_abortTask)
+                if(_cancellationTokenSource.IsCancellationRequested)
                     break;
 
                 lock (_lock)
@@ -276,31 +277,31 @@ namespace QuickFix.Store
                     {
                         var msg = tuple.Item1;
                         var msgSeqNum = tuple.Item2;
-                        msgFile_.Seek(0, SeekOrigin.End);
+                        _msgFile.Seek(0, SeekOrigin.End);
 
-                        long offset = msgFile_.Position;
-                        var length = CharEncoding.DefaultEncoding.GetBytes(msg, _writeBuffer);
+                        long offset = _msgFile.Position;
+                        var length = CharEncoding.DefaultEncoding.GetBytes(msg, writeBuffer);
 
-                        _setBuffer.Clear();
-                        _setBuffer.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
-                        headerFile_.WriteLine(_setBuffer.ToString());
-                        headerFile_.Flush();
+                        setBuffer.Clear();
+                        setBuffer.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
+                        _headerFile.WriteLine(setBuffer.ToString());
+                        _headerFile.Flush();
 
                         var offsetObject = new MsgDef(offset, length);
-                        offsets_[msgSeqNum] = offsetObject;
+                        _offsets[msgSeqNum] = offsetObject;
 
-                        msgFile_.Write(_writeBuffer, 0, length);
-                        msgFile_.Flush();
+                        _msgFile.Write(writeBuffer, 0, length);
+                        _msgFile.Flush();
                     }
 
-                    SeqMsgBuffer.Remove(0, 10);
-                    SeqMsgBuffer.Insert(0, NextSenderMsgSeqNum.ToString("D20"));
-                    SeqMsgBuffer.Remove(13, 10);
-                    SeqMsgBuffer.Insert(13, NextTargetMsgSeqNum.ToString("D20"));
+                    seqMsgBuffer.Remove(0, 20);
+                    seqMsgBuffer.Insert(0, NextSenderMsgSeqNum.ToString("D20"));
+                    seqMsgBuffer.Remove(23, 20);
+                    seqMsgBuffer.Insert(23, NextTargetMsgSeqNum.ToString("D20"));
 
-                    seqNumsWriter_.BaseStream.Seek(0, SeekOrigin.Begin);
-                    seqNumsWriter_.Write(SeqMsgBuffer.ToString());
-                    seqNumsWriter_.Flush();
+                    _seqNumsWriter.BaseStream.Seek(0, SeekOrigin.Begin);
+                    _seqNumsWriter.Write(seqMsgBuffer.ToString());
+                    _seqNumsWriter.Flush();
                 }
             }
         }
@@ -315,7 +316,7 @@ namespace QuickFix.Store
         {
             lock (_lock)
             {
-                cache_.Reset();
+                _cache.Reset();
                 PurgeFileCache();
                 open();
             }
@@ -334,12 +335,13 @@ namespace QuickFix.Store
         {
             lock (_lock)
             {
-                _abortTask = true;
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
                 _autoResetEvent.Set();
                 _setThread.Join(500);
-                seqNumsWriter_.Dispose();
-                msgFile_.Dispose();
-                headerFile_.Dispose();
+                _seqNumsWriter.Dispose();
+                _msgFile.Dispose();
+                _headerFile.Dispose();
             }
         }
 
