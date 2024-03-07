@@ -126,13 +126,13 @@ namespace QuickFix.Message
 
         public static StringField ExtractField(ReadOnlySpan<char> msgstr, ref int pos)
         {
-            return ExtractField(msgstr, ref pos, null, null);
+            return ExtractField(msgstr, ref pos);
         }
 
         public static StringField ExtractBeginString(ReadOnlySpan<char> msgstr, StringField reusableField = null)
         {
             int i = 0;
-            return ExtractField(msgstr, ref i, null, null, reusableField);
+            return ExtractField(msgstr, ref i, reusableField);
         }
 
         public static bool IsHeaderField(int tag)
@@ -367,7 +367,7 @@ namespace QuickFix.Message
             IFieldMapSpec msgMap = null;
             while (pos < msgstr.Length)
             {
-                StringField f = ExtractField(msgstr, ref pos, sessionDD, appDD, ReusableFields.GetNextReusableStringField());
+                StringField f = ExtractField(msgstr, ref pos, ReusableFields.GetNextReusableStringField());
 
                 if (validate && count < 3 && Header.HEADER_FIELD_ORDER[count++] != f.Tag)
                     throw new InvalidMessage("Header fields out of order");
@@ -390,12 +390,12 @@ namespace QuickFix.Message
                             }
                     }
 
-                    if (!Header.SetField(f, false))
+                    if (!Header.SetField(f, true))
                         Header.RepeatedTags.Add(f);
 
                     if (sessionDD is not null && sessionDD.Header.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, Header, sessionDD.Header.GetGroupSpec(f.Tag), sessionDD, appDD, msgFactory);
+                        pos = SetGroup(f, msgstr, pos, Header, sessionDD.Header.GetGroupSpec(f.Tag), msgFactory);
                     }
                 }
                 else if (IsTrailerField(f.Tag, sessionDD))
@@ -407,7 +407,7 @@ namespace QuickFix.Message
 
                     if (sessionDD is not null && sessionDD.Trailer.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, Trailer, sessionDD.Trailer.GetGroup(f.Tag), sessionDD, appDD, msgFactory);
+                        pos = SetGroup(f, msgstr, pos, Trailer, sessionDD.Trailer.GetGroup(f.Tag), msgFactory);
                     }
                 }
                 else if (ignoreBody == false)
@@ -427,7 +427,7 @@ namespace QuickFix.Message
 
                     if (msgMap is not null && msgMap.IsGroup(f.Tag))
                     {
-                        pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), sessionDD, appDD, msgFactory);
+                        pos = SetGroup(f, msgstr, pos, this, msgMap.GetGroupSpec(f.Tag), msgFactory);
                     }
                 }
             }
