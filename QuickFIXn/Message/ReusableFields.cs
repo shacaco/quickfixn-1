@@ -1,9 +1,9 @@
 ﻿using System;
-using QuickFix.Fields;
 using System.Linq;
 using System.Threading;
+using QuickFix.Fields;
 
-namespace QuickFix;
+namespace QuickFix.Message;
 
 public class ReusableFields
 {
@@ -20,28 +20,23 @@ public class ReusableFields
     private BooleanField[] _reusableBooleanFields;
     private IntField[] _reusableIntFields;
 
-    public class ReusableFieldsLengths
+    public class ReusableFieldsLengths(
+        int stringFieldsCount,
+        int dateTimeFieldsCount,
+        int decimalFieldsCount,
+        int charFieldsCount,
+        int booleanFieldsCount,
+        int intFieldsCount)
     {
-        internal int StringFieldsCounter { get; }
-        internal int DecimalFieldsCounter { get; }
-        internal int DateTimeFieldsCounter { get; }
-        internal int CharFieldsCounter { get; }
-        internal int BooleanFieldsCounter { get; }
-        internal int IntFieldsCounter { get; }
-
-        internal ReusableFieldsLengths(int stringFieldsCount, int dateTimeFieldsCount, int decimalFieldsCount, int charFieldsCount,
-            int booleanFieldsCount, int intFieldsCount)
-        {
-            StringFieldsCounter = stringFieldsCount;
-            DateTimeFieldsCounter = dateTimeFieldsCount;
-            DecimalFieldsCounter = decimalFieldsCount;
-            CharFieldsCounter = charFieldsCount;
-            BooleanFieldsCounter = booleanFieldsCount;
-            IntFieldsCounter = intFieldsCount;
-        }
+        internal int StringFieldsCounter { get; } = stringFieldsCount;
+        internal int DecimalFieldsCounter { get; } = decimalFieldsCount;
+        internal int DateTimeFieldsCounter { get; } = dateTimeFieldsCount;
+        internal int CharFieldsCounter { get; } = charFieldsCount;
+        internal int BooleanFieldsCounter { get; } = booleanFieldsCount;
+        internal int IntFieldsCounter { get; } = intFieldsCount;
     }
 
-    internal ReusableFields(ReusableFieldsLengths lengths)
+    public ReusableFields(ReusableFieldsLengths lengths)
     {
         _reusableStringFields =
             new StringField[lengths.StringFieldsCounter].Select(i => new StringField(-1)).ToArray();
@@ -58,7 +53,7 @@ public class ReusableFields
         ResetCounters();
     }
 
-    internal void ResetCounters()
+    public void ResetCounters()
     {
         _stringFieldsCounter = _decimalFieldsCounter = _dateTimeFieldsCounter = _charFieldsCounter = _booleanFieldsCounter = _intFieldsCounter = -1;
     }

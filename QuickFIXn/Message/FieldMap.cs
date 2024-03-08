@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using QuickFix.Fields;
 using QuickFix.Fields.Converters;
+using QuickFix.Message;
 
 namespace QuickFix
 {
