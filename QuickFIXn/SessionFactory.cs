@@ -36,7 +36,7 @@ namespace QuickFix
             _messageFactory = messageFactory ?? new DefaultMessageFactory();
         }
 
-        private static bool DetectIfInitiator(QuickFix.SettingsDictionary settings)
+        private static bool DetectIfInitiator(SettingsDictionary settings)
         {
             switch (settings.GetString(SessionSettings.CONNECTION_TYPE))
             {
@@ -46,7 +46,7 @@ namespace QuickFix
             throw new ConfigError("Invalid ConnectionType");
         }
 
-        public Session Create(SessionID sessionId, QuickFix.SettingsDictionary settings)
+        public Session Create(SessionID sessionId, SettingsDictionary settings)
         {
             bool isInitiator = SessionFactory.DetectIfInitiator(settings);
 
@@ -115,6 +115,11 @@ namespace QuickFix
                 sessionMsgFactory,
                 senderDefaultApplVerId);
 
+            if (settings.Has("MillisecondsInTimeStamp")) {
+                throw new ApplicationException(
+                    "Setting 'MillisecondsInTimeStamp' was removed.  Use 'TimestampPrecision=Milliseconds' instead.");
+            }
+
             if (settings.Has(SessionSettings.SEND_REDUNDANT_RESENDREQUESTS))
                 session.SendRedundantResendRequests = settings.GetBool(SessionSettings.SEND_REDUNDANT_RESENDREQUESTS);
             if (settings.Has(SessionSettings.RESEND_SESSION_LEVEL_REJECTS))
@@ -149,8 +154,6 @@ namespace QuickFix
                 session.PersistMessages = settings.GetBool(SessionSettings.PERSIST_MESSAGES);
             if (settings.Has(SessionSettings.ORDER_BODY_FIELDS_ON_SEND))
                 session.OrderBodyFieldsOnSend = settings.GetBool(SessionSettings.ORDER_BODY_FIELDS_ON_SEND);
-            if (settings.Has(SessionSettings.MILLISECONDS_IN_TIMESTAMP))
-                session.MillisecondsInTimeStamp = settings.GetBool(SessionSettings.MILLISECONDS_IN_TIMESTAMP);
             if (settings.Has(SessionSettings.TIMESTAMP_PRECISION))
                 session.TimeStampPrecision = settings.GetTimeStampPrecision(SessionSettings.TIMESTAMP_PRECISION);
             if (settings.Has(SessionSettings.ENABLE_LAST_MSG_SEQ_NUM_PROCESSED))
@@ -170,7 +173,7 @@ namespace QuickFix
             return session;
         }
 
-        protected DataDictionary.DataDictionary CreateDataDictionary(SessionID sessionId, QuickFix.SettingsDictionary settings, string settingsKey, string beginString)
+        protected DataDictionary.DataDictionary CreateDataDictionary(SessionID sessionId, SettingsDictionary settings, string settingsKey, string beginString)
         {
             string path;
             if (settings.Has(settingsKey))

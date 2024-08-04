@@ -176,16 +176,6 @@ namespace QuickFix
         public bool CheckCompID { get; set; }
 
         /// <summary>
-        /// Determines if milliseconds should be added to timestamps.
-        /// Only avilable on FIX4.2. or greater
-        /// </summary>
-        public bool MillisecondsInTimeStamp
-        {
-            get => TimeStampPrecision == TimeStampPrecision.Millisecond;
-            set => TimeStampPrecision = value ? TimeStampPrecision.Millisecond : TimeStampPrecision.Second;
-        }
-
-        /// <summary>
         /// Gets or sets the time stamp precision.
         /// </summary>
         /// <value>
@@ -421,7 +411,7 @@ namespace QuickFix
                 }
                 else
                 {
-                    Log.OnEvent("Session {SessionID} already disconnected: {reason}");
+                    Log.OnEvent($"Session {SessionID} already disconnected: {reason}");
                 }
 
                 if (_state.ReceivedLogon || _state.SentLogon)
@@ -688,10 +678,7 @@ namespace QuickFix
 
         protected void NextLogon(Message.Message logon)
         {
-            Fields.ResetSeqNumFlag resetSeqNumFlag = new Fields.ResetSeqNumFlag(false);
-            if (logon.IsSetField(resetSeqNumFlag))
-                logon.GetField(resetSeqNumFlag);
-            _state.ReceivedReset = resetSeqNumFlag.Obj;
+            _state.ReceivedReset = logon.IsSetField(ResetSeqNumFlag.TAG) && logon.GetBoolean(ResetSeqNumFlag.TAG);
 
             if (_state.ReceivedReset)
             {
@@ -731,7 +718,7 @@ namespace QuickFix
             _state.ReceivedReset = false;
 
             SeqNumType msgSeqNum = logon.Header.GetULong(Fields.Tags.MsgSeqNum);
-            if (IsTargetTooHigh(msgSeqNum) && !resetSeqNumFlag.Obj)
+            if (IsTargetTooHigh(msgSeqNum) && !_state.ReceivedReset)
             {
                 DoTargetTooHigh(logon, msgSeqNum);
             }
@@ -1216,6 +1203,10 @@ namespace QuickFix
             _state.SetResendRange(beginSeqNum, endRangeSeqNum, endChunkSeqNum);
         }
 
+        /// <summary>
+        /// Create and send a logon
+        /// </summary>
+        /// <returns>true of logon was successfully sent</returns>
         protected bool GenerateLogon()
         {
             Message.Message logon = _msgFactory.Create(SessionID.BeginString, Fields.MsgType.LOGON);
