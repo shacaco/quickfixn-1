@@ -151,7 +151,7 @@ namespace QuickFix.Logger
                         DisposedCheck();
                         while (_messages.TryDequeue(out var package))
                         {
-                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            var timeStr = DateTimeConverter.ToFIX(package.Time, TimeStampPrecision.Microsecond).AsSpan();
                             messageLog_.Write(timeStr);
                             messageLog_.Write(Colon);
                             messageLog_.WriteLine(package.Buffer, 0, package.Length);
@@ -160,7 +160,7 @@ namespace QuickFix.Logger
 
                         while (_events.TryDequeue(out var package))
                         {
-                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            var timeStr = DateTimeConverter.ToFIX(package.Time, TimeStampPrecision.Microsecond).AsSpan();
                             eventLog_.Write(timeStr);
                             eventLog_.Write(Colon);
                             eventLog_.WriteLine(package.Buffer, 0, package.Length);
