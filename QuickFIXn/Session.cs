@@ -865,7 +865,7 @@ namespace QuickFix
 
             if (!_state.SentLogout)
             {
-                disconnectReason = "Received logout request";
+                disconnectReason = $"Received logout request reason:{(logout.TryGetString(Tags.Text, out var s) ? s : "unknown")}";
                 Log.OnEvent(disconnectReason, LogLevel.Error);
                 GenerateLogout(logout);
                 Log.OnEvent("Sending logout response");
