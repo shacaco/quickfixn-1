@@ -168,6 +168,8 @@ namespace QuickFix
                 session.ValidateLengthAndChecksum = settings.GetBool(SessionSettings.VALIDATE_LENGTH_AND_CHECKSUM);
             if (settings.Has(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME))
                 session.RequiresOrigSendingTime = settings.GetBool(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME);
+            if (settings.Has(SessionSettings.ADVANCE_SENDER_MSG_SEQ_NUM_ON_FIRST_LOGOUT_OF_TOO_LOW_SEQ_NUM))
+                session.AdvanceSenderMsgSeqNumOnFirstLogoutOfTooLowSeqNum = settings.GetBool(SessionSettings.ADVANCE_SENDER_MSG_SEQ_NUM_ON_FIRST_LOGOUT_OF_TOO_LOW_SEQ_NUM);
 
             _application.OnCreate(session.SessionID);
             return session;

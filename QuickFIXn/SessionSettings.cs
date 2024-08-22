@@ -46,6 +46,7 @@ namespace QuickFix
         public const string RESET_ON_LOGON = "ResetOnLogon";
         public const string RESET_ON_LOGOUT = "ResetOnLogout";
         public const string RESET_ON_DISCONNECT = "ResetOnDisconnect";
+        public const string ADVANCE_SENDER_MSG_SEQ_NUM_ON_FIRST_LOGOUT_OF_TOO_LOW_SEQ_NUM = "AdvanceSenderMsgSeqNumOnFirstLogoutOfTooLowSeqNum";
         public const string VALIDATE_FIELDS_OUT_OF_ORDER = "ValidateFieldsOutOfOrder";
         public const string VALIDATE_FIELDS_HAVE_VALUES = "ValidateFieldsHaveValues";
         public const string VALIDATE_USER_DEFINED_FIELDS = "ValidateUserDefinedFields";

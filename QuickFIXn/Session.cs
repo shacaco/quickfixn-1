@@ -101,6 +101,11 @@ namespace QuickFix
         }
 
         /// <summary>
+        /// Whether to advance the sender's message sequence number on the first logout of too low sequence number
+        /// </summary>
+        public bool AdvanceSenderMsgSeqNumOnFirstLogoutOfTooLowSeqNum { get; set; }
+
+        /// <summary>
         /// Logon timeout in seconds
         /// </summary>
         public int LogonTimeout
@@ -856,6 +861,35 @@ namespace QuickFix
             return true;
         }
 
+        private bool IsLogoutMessageOfSenderSequenseNumberTooLow(Message.Message message, out SeqNumType expectedSeqNum)
+        {
+            expectedSeqNum = (ulong)0;
+            //check message type is logout
+            if (message.Header.GetString(Tags.MsgType) != MsgType.LOGOUT)
+                throw new Exception("Message is not a logout message");
+
+            //check what is the next expected sequence number from the value of the text tag
+            if (!message.TryGetString(Tags.Text, out var text))
+                return false;
+           
+            if (!text.Contains("FIX sequence is too low"))
+                return false;
+          
+            var words = text.Split(" ");
+       
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].ToLower().Contains("expected"))
+                {
+                    if (ulong.TryParse(words[i + 1], out expectedSeqNum))
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            return false;
+        }
+
         protected void NextLogout(Message.Message logout)
         {
             if (!Verify(logout, false, false))
@@ -865,6 +899,13 @@ namespace QuickFix
 
             if (!_state.SentLogout)
             {
+                // If the logout message error is that the sequence number is too low, and the settings allow it, then advance the sender sequence number to the expected sequence number
+                if (AdvanceSenderMsgSeqNumOnFirstLogoutOfTooLowSeqNum && IsLogoutMessageOfSenderSequenseNumberTooLow(logout, out var expectedSeqNum))
+                {
+                    _state.NextSenderMsgSeqNum = expectedSeqNum;
+                    AdvanceSenderMsgSeqNumOnFirstLogoutOfTooLowSeqNum = false;
+                }
+
                 disconnectReason = $"Received logout request reason:{(logout.TryGetString(Tags.Text, out var s) ? s : "unknown")}";
                 Log.OnEvent(disconnectReason, LogLevel.Error);
                 GenerateLogout(logout);

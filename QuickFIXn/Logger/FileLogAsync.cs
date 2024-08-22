@@ -13,7 +13,7 @@ namespace QuickFix.Logger
     /// </summary>
     public class FileLogAsync : ILog, IDisposable
     {
-        public event EventHandler<LogEventArgs> LogEvent;
+        public event EventHandler<LogEventArgs> LogEvent = delegate { };
       
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private const char NullChar = '\0';
