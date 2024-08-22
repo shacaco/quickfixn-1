@@ -1,5 +1,7 @@
-﻿#nullable enable
+#nullable enable
 using System;
+using NLog;
+using QuickFix.Fields.Converters;
 using QuickFix.Util;
 
 namespace QuickFix.Logger;
@@ -95,7 +97,7 @@ public class FileLog : ILog
 
         lock (_sync)
         {
-            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg.ToString());
+            _messageLog.WriteLine(DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond) + " : " + msg.ToString());
         }
     }
 
@@ -105,17 +107,22 @@ public class FileLog : ILog
 
         lock (_sync)
         {
-            _messageLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : " + msg.ToString());
+            _messageLog.WriteLine(DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond) + " : " + msg.ToString());
         }
     }
 
     public void OnEvent(string s)
     {
+        OnEvent(s, LogLevel.Info);
+    }
+
+    public void OnEvent(string s, LogLevel logLevel)
+    {
         DisposedCheck();
 
         lock (_sync)
         {
-            _eventLog.WriteLine(Fields.Converters.DateTimeConverter.Convert(DateTime.UtcNow) + " : "+ s);
+            _eventLog.WriteLine($"{DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond)} {logLevel} : {s}");
         }
     }
 

@@ -5,6 +5,7 @@ using System.Net;
 using System;
 using QuickFix.Logger;
 using QuickFix.Store;
+using NLog;
 
 namespace QuickFix
 {
@@ -21,6 +22,7 @@ namespace QuickFix
         private bool _isStarted = false;
         private bool _disposed = false;
         private readonly object _sync = new();
+        private readonly NonSessionLog _nonSessionLog;
 
         #region Constructors
 
@@ -43,12 +45,13 @@ namespace QuickFix
             IMessageFactory mf = messageFactory ?? new DefaultMessageFactory();
             _settings = settings;
             _sessionFactory = new SessionFactory(application, storeFactory, lf, mf);
+            _nonSessionLog = new NonSessionLog(lf);
 
             try
             {
                 foreach (SessionID sessionId in settings.GetSessions())
                 {
-                    QuickFix.SettingsDictionary dict = settings.Get(sessionId);
+                    SettingsDictionary dict = settings.Get(sessionId);
                     CreateSession(sessionId, dict);
                 }
             }
@@ -93,7 +96,7 @@ namespace QuickFix
 
             if (!_socketDescriptorForAddress.TryGetValue(socketEndPoint, out var descriptor))
             {
-                descriptor = new AcceptorSocketDescriptor(socketEndPoint, socketSettings, dict);
+                descriptor = new AcceptorSocketDescriptor(socketEndPoint, socketSettings, dict, _nonSessionLog);
                 _socketDescriptorForAddress[socketEndPoint] = descriptor;
             }
 
@@ -147,11 +150,9 @@ namespace QuickFix
         {
             lock (_sync)
             {
-                // FIXME StartSessionTimer();
                 foreach (AcceptorSocketDescriptor socketDescriptor in _socketDescriptorForAddress.Values)
                 {
                     socketDescriptor.SocketReactor.Start();
-                    // FIXME log_.Info("Listening for connections on " + socketDescriptor.getAddress());
                 }
             }
         }
@@ -163,7 +164,6 @@ namespace QuickFix
                 foreach (AcceptorSocketDescriptor socketDescriptor in _socketDescriptorForAddress.Values)
                 {
                     socketDescriptor.SocketReactor.Shutdown();
-                    // FIXME log_.Info("No longer accepting connections on " + socketDescriptor.getAddress());
                 }
             }
         }
@@ -178,7 +178,7 @@ namespace QuickFix
                 }
                 catch (Exception e)
                 {
-                    System.Console.WriteLine("Error during logout of Session " + session.SessionID + ": " + e.Message);
+                    session.Log.OnEvent($"Error during logout of Session {session.SessionID}: {e.Message}", LogLevel.Warn);
                 }
             }
 
@@ -193,7 +193,7 @@ namespace QuickFix
                     }
                     catch (Exception e)
                     {
-                        System.Console.WriteLine("Error during disconnect of Session " + session.SessionID + ": " + e.Message);
+                        session.Log.OnEvent($"Error during disconnect of Session {session.SessionID}: {e.Message}", LogLevel.Warn);
                     }
                 }
             }
@@ -203,11 +203,10 @@ namespace QuickFix
         }
 
         /// <summary>
-        /// FIXME implement WaitForLogout
+        /// TODO implement WaitForLogout
         /// </summary>
         private void WaitForLogout()
         {
-            System.Console.WriteLine("TODO - ThreadedSocketAcceptor.WaitForLogout not implemented!");
             /*
             int start = System.Environment.TickCount;
             HashSet<Session> sessions = new HashSet<Session>(sessions_.Values);

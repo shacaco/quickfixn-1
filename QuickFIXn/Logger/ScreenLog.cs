@@ -1,5 +1,6 @@
 ﻿#nullable enable
 
+using NLog;
 using System;
 
 namespace QuickFix.Logger;
@@ -50,12 +51,17 @@ public class ScreenLog : ILog
 
     public void OnEvent(string s)
     {
+        OnEvent(s, LogLevel.Info);
+    }
+
+    public void OnEvent(string s, LogLevel logLevel)
+    {
         if (!_logEvent)
             return;
 
         lock (_sync)
         {
-            System.Console.WriteLine("<event> " + s);
+            System.Console.WriteLine($"<event> {logLevel} {s}");
         }
     }
     #endregion

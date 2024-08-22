@@ -8,9 +8,12 @@ QuickFIX/n is a .NET port of QuickFIX, an open source C++ FIX engine.
 What's New
 ----------
 
-**CAUTION: There are breaking changes between 1.10 and 1.11!  Please review the 1.11.0 notes below.**
+**CAUTION:**  
+* **There are breaking changes between 1.11 and 1.12!  Please review the 1.12.0 notes below.**
+* **There are breaking changes between 1.10 and 1.11!  Please review the 1.11.0 notes below.**
 
-### NEXT RELEASE
+
+### v1.12.0
 
 **Breaking changes**
 * #768 - span-ify parser (Rob-Hague) - makes a change to QuickFix.Parser interface, which isn't likely to affect users
@@ -21,7 +24,7 @@ What's New
          ByteSizeString is public, but probably no one uses it
 * #822 - cleanup/nullable-ize Message/ classes (gbirchmeier)
      * FieldMap: getFieldOrder() deleted.  Just call FieldOrder.
-     * FieldMap: GetGroup(int num, Group group) now returns null instead of redundant Group
+     * FieldMap: GetGroup(int num, Group group) now returns void instead of redundant Group
      * Group: rename Field to CounterField
      * Message: changed `SOH`'s type from string to char
      * Message: ctor Message(string msgstr, DataDictionary.DataDictionary dataDictionary, bool validate) deleted.
@@ -56,6 +59,15 @@ What's New
      * privatize a ctor that takes a generic Dict; apps shouldn't use it
      * remove the copy ctor that takes only a SessionDict; replace it with one
        that explicitly requires a name also
+* #842 - Fix nano-datetime-to-string bug (gbirchmeier)
+     * Also refactor the heck out of DateTimeConverter & tests: many functions renamed/deprecated
+* #847 - remove setting MillisecondsInTimeStamp (gbirchmeier)
+     * Use TimestampPrecision instead (same as QF/j)
+* #830 - replace ClientThreadHandler "Debug" logs with NonSessionLog (gbirchmeier)
+     * ILogFactory extended with a `CreateNonSessionLog()`.  Pretty easy to implement though.
+     * Some classes were internalized, but I can't imagine people are using them in their app code.
+     * See details/explanation at https://github.com/connamara/quickfixn/pull/830
+
 
 **Non-breaking changes**
 * #400 - added DDTool, a C#-based codegen, and deleted Ruby-based generator (gbirchmeier)
@@ -78,6 +90,8 @@ What's New
       Programming Model (APM), in order to catch unobserved SocketExceptions (nmandzyk)
     * Cleanup/nullable-ize SocketInitiatorThread (gbirchmeier)
 * #839 - change ScreenLog to output FIX messages with "|" instead of non-visible SOH (gbirchmeier)
+* #844 - implement "Weekdays" setting (MichalUssuri/gbirchmeier)
+* #859 - implement proper path searching for CA certs in config (gbirchmeier)
 
 ### v1.11.2:
 * same as v1.11.1, but I fixed the readme in the pushed nuget packages

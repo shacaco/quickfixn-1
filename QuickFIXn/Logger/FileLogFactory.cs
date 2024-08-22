@@ -1,14 +1,11 @@
-﻿using QuickFix.Logger;
-
 namespace QuickFix.Logger
 {
     /// <summary>
     /// Creates a message store that stores messages in a file
+    /// Creates a file-based message log
     /// </summary>
     public class FileLogFactory(SessionSettings settings) : ILogFactory
     {
-        #region LogFactory Members
-
         /// <summary>
         /// Creates a file-based message store
         /// </summary>
@@ -22,7 +19,12 @@ namespace QuickFix.Logger
             return new FileLog(settings.Get(sessionID).GetString(SessionSettings.FILE_LOG_PATH), sessionID);
         }
 
-        #endregion
+        public ILog CreateNonSessionLog()
+        {
+            return new FileLog(
+                settings.Get().GetString(SessionSettings.FILE_LOG_PATH),
+                new SessionID("Non", "Session", "Log"));
+        }
     }
 }
 

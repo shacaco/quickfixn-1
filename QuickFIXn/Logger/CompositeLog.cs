@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using NLog;
 using System;
 
 namespace QuickFix.Logger;
@@ -40,9 +41,14 @@ internal class CompositeLog : ILog
 
     public void OnEvent(string s)
     {
+        OnEvent(s, LogLevel.Info);
+    }
+
+    public void OnEvent(string s, LogLevel logLevel)
+    {
         DisposedCheck();
         foreach (var log in _logs)
-            log.OnEvent(s);
+            log.OnEvent(s, logLevel);
     }
 
     public void Dispose()

@@ -1,7 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using NLog;
 using QuickFix.Fields.Converters;
 using Utils;
 using Utils.Collections;
@@ -110,23 +110,29 @@ namespace QuickFix.Logger
 
         public void OnIncoming(ReadOnlySpan<char> msg)
         {
-            AddWriteOperation(_messages, msg);
+            AddWriteOperation(_messages, msg, null);
         }
 
         public void OnOutgoing(ReadOnlySpan<char> msg)
         {
-            AddWriteOperation(_messages, msg);
+            AddWriteOperation(_messages, msg, null);
         }
 
         public void OnEvent(string msg)
         {
-            AddWriteOperation(_events, msg);
+            AddWriteOperation(_events, msg, LogLevel.Info);
         }
 
-        private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg)
+        public void OnEvent(string msg, LogLevel logLevel)
+        {
+            AddWriteOperation(_events, msg, logLevel);
+        }
+
+        private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg, LogLevel logLevel)
         {
             var package = _buffer.Dequeue();
             package.Time = DateTime.UtcNow;
+            package.LogLevel = logLevel;
             msg.CopyTo(package.Buffer.AsSpan());
             package.Length = msg.Length;
             dest.Enqueue(package);
@@ -151,7 +157,7 @@ namespace QuickFix.Logger
                         DisposedCheck();
                         while (_messages.TryDequeue(out var package))
                         {
-                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            var timeStr = DateTimeConverter.ToFIX(package.Time, TimeStampPrecision.Microsecond).AsSpan();
                             messageLog_.Write(timeStr);
                             messageLog_.Write(Colon);
                             messageLog_.WriteLine(package.Buffer, 0, package.Length);
@@ -160,8 +166,10 @@ namespace QuickFix.Logger
 
                         while (_events.TryDequeue(out var package))
                         {
-                            var timeStr = DateTimeConverter.Convert(package.Time, TimeStampPrecision.Microsecond).AsSpan();
+                            var timeStr = DateTimeConverter.ToFIX(package.Time, TimeStampPrecision.Microsecond).AsSpan();
                             eventLog_.Write(timeStr);
+                            eventLog_.Write(' ');
+                            eventLog_.Write(package.LogLevel);
                             eventLog_.Write(Colon);
                             eventLog_.WriteLine(package.Buffer, 0, package.Length);
                             _buffer.Enqueue(package);
@@ -178,6 +186,7 @@ namespace QuickFix.Logger
             internal char[] Buffer { get; } = new char[1024];
             internal int Length { get; set; }
             internal DateTime Time { get; set; }
+            internal LogLevel LogLevel { get; set; }
         }
         #endregion
 
