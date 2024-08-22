@@ -11,6 +11,8 @@ namespace QuickFix.Logger;
 /// </summary>
 public class FileLog : ILog
 {
+    public event EventHandler<LogEventArgs> LogEvent = delegate { };
+
     private readonly object _sync = new();
 
     private System.IO.StreamWriter _messageLog;
@@ -18,6 +20,8 @@ public class FileLog : ILog
 
     private readonly string _messageLogFileName;
     private readonly string _eventLogFileName;
+
+    public SessionID? SessionID { get; }
 
     /// <summary>
     ///
@@ -29,6 +33,7 @@ public class FileLog : ILog
     /// <param name="sessionId"></param>
     public FileLog(string fileLogPath, SessionID sessionId)
     {
+        SessionID = sessionId;
         string prefix = Prefix(sessionId);
 
         string normalizedPath = StringUtil.FixSlashes(fileLogPath);
@@ -124,6 +129,7 @@ public class FileLog : ILog
         {
             _eventLog.WriteLine($"{DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond)} {logLevel} : {s}");
         }
+        LogEvent(this, new LogEventArgs(s, logLevel, SessionID));
     }
 
     #endregion
@@ -136,6 +142,7 @@ public class FileLog : ILog
     }
 
     private bool _disposed = false;
+
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed) return;

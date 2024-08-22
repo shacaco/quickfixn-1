@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿#nullable enable
+using NLog;
 using System;
 
 namespace QuickFix.Logger;
@@ -8,6 +9,15 @@ namespace QuickFix.Logger;
 /// </summary>
 public interface ILog : IDisposable
 {
+    /// <summary>
+    /// event for event log messages
+    /// </summary>
+    public event EventHandler<LogEventArgs> LogEvent;
+
+    /// <summary>
+    /// the session ID
+    /// </summary>
+    public SessionID? SessionID { get; }
     /// <summary>
     /// Clears the log and removes any persistent log data
     /// </summary>
