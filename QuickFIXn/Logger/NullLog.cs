@@ -9,6 +9,10 @@ namespace QuickFix.Logger;
 /// </summary>
 public sealed class NullLog : ILog
 {
+
+    public event EventHandler<LogEventArgs> LogEvent;
+    public SessionID SessionID { get; }
+
     #region ILog Members
 
     public void Clear()

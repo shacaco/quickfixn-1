@@ -13,9 +13,15 @@ internal class CompositeLog : ILog
 
     private bool _disposed = false;
 
+    public SessionID? SessionID { get; }
+
+    public event EventHandler<LogEventArgs> LogEvent = delegate { };
+
     public CompositeLog(ILog[] logs)
     {
         _logs = logs;
+        foreach (var log in _logs)
+            log.LogEvent += (sender, args) => LogEvent?.Invoke(sender, args);
     }
 
     public void Clear()

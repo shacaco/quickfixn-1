@@ -13,6 +13,8 @@ namespace QuickFix.Logger
     /// </summary>
     public class FileLogAsync : ILog, IDisposable
     {
+        public event EventHandler<LogEventArgs> LogEvent;
+      
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private const char NullChar = '\0';
 
@@ -34,13 +36,11 @@ namespace QuickFix.Logger
         private readonly ConcurrentQueue<WritePackage> _events = new ConcurrentQueue<WritePackage>();
         private readonly AutoResetEvent _writeEvent = new AutoResetEvent(true);
 
-        public FileLogAsync(string fileLogPath)
-        {
-            Init(fileLogPath, "GLOBAL");
-        }
+        public SessionID SessionID { get; }
 
         public FileLogAsync(string fileLogPath, SessionID sessionID)
         {
+            SessionID = sessionID;
             Init(fileLogPath, Prefix(sessionID));
         }
 
@@ -120,12 +120,13 @@ namespace QuickFix.Logger
 
         public void OnEvent(string msg)
         {
-            AddWriteOperation(_events, msg, LogLevel.Info);
+            OnEvent(msg, LogLevel.Info);
         }
 
         public void OnEvent(string msg, LogLevel logLevel)
         {
             AddWriteOperation(_events, msg, logLevel);
+            LogEvent(this, new LogEventArgs(msg, logLevel, SessionID));
         }
 
         private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg, LogLevel logLevel)

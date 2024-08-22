@@ -42,10 +42,10 @@ public class ScreenLogFactory : ILogFactory
             logEvent = _logEvent || dict.IsBoolPresentAndTrue(SCREEN_LOG_SHOW_EVENTS);
         }
 
-        return new ScreenLog(logIncoming, logOutgoing, logEvent);
+        return new ScreenLog(logIncoming, logOutgoing, logEvent, sessionId);
     }
 
     public ILog CreateNonSessionLog() {
-        return new ScreenLog(true, true, true);
+        return new ScreenLog(true, true, true, new SessionID("Non", "Session", "Log"));
     }
 }

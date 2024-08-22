@@ -10,13 +10,18 @@ namespace QuickFix.Logger;
 /// </summary>
 public class ScreenLog : ILog
 {
+    public event EventHandler<LogEventArgs> LogEvent = delegate { };
+
     private readonly object _sync = new ();
     private readonly bool _logIncoming;
     private readonly bool _logOutgoing;
     private readonly bool _logEvent;
 
-    public ScreenLog(bool logIncoming, bool logOutgoing, bool logEvent)
+    public SessionID SessionID { get; }
+
+    public ScreenLog(bool logIncoming, bool logOutgoing, bool logEvent, SessionID sessionID)
     {
+        SessionID = sessionID;
         _logIncoming = logIncoming;
         _logOutgoing = logOutgoing;
         _logEvent    = logEvent;
@@ -63,6 +68,7 @@ public class ScreenLog : ILog
         {
             System.Console.WriteLine($"<event> {logLevel} {s}");
         }
+        LogEvent(this, new LogEventArgs(s, logLevel, SessionID));
     }
     #endregion
 
