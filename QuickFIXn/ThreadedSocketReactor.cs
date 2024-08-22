@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System;
 using QuickFix.Logger;
+using NLog;
 
 namespace QuickFix
 {
@@ -78,13 +79,13 @@ namespace QuickFix
                             }
                             catch (Exception e)
                             {
-                                LogError("Tried to interrupt server socket but was already closed", e);
+                                LogError("Tried to interrupt server socket but was already closed", LogLevel.Warn, e);
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        LogError("Error while closing server socket", e);
+                        LogError("Error while closing server socket", LogLevel.Warn, e);
                     }
                 }
             }
@@ -102,7 +103,7 @@ namespace QuickFix
                     }
                     catch(Exception e)
                     {
-                        LogError("Error starting listener", e);
+                        LogError("Error starting listener", LogLevel.Error, e);
                         throw;
                     }
                 }
@@ -134,7 +135,7 @@ namespace QuickFix
                 catch (Exception e)
                 {
                     if (State.RUNNING == ReactorState)
-                        LogError("Error accepting connection", e);
+                        LogError("Error accepting connection", LogLevel.Warn, e);
                 }
             }
             _tcpListener.Server.Close();
@@ -197,7 +198,7 @@ namespace QuickFix
                         }
                         catch (Exception e)
                         {
-                            LogError("Error shutting down", e);
+                            LogError("Error shutting down", LogLevel.Warn, e);
                         }
                         t.Dispose();
                     }
@@ -211,9 +212,11 @@ namespace QuickFix
         /// Write to the NonSessionLog
         /// </summary>
         /// <param name="s"></param>
+        /// <param name="logLevel"></param>
         /// <param name="ex"></param>
-        private void LogError(string s, Exception? ex = null) {
-            _nonSessionLog.OnEvent(ex is null ? $"{s}" : $"{s}: {ex}");
+        private void LogError(string s, LogLevel logLevel, Exception? ex = null) 
+        {
+            _nonSessionLog.OnEvent(ex is null ? $"{s}" : $"{s}: {ex}", logLevel);
         }
     }
 }

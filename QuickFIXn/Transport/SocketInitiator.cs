@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using NLog;
 using QuickFix.Logger;
 using QuickFix.Store;
 
@@ -80,10 +81,10 @@ namespace QuickFix.Transport
 
         private static void LogThreadStartConnectionFailed(SocketInitiatorThread t, Exception e) {
             if (t.Session.Disposed) {
-                t.NonSessionLog.OnEvent($"Connection failed [session {t.Session.SessionID}]: {e}");
+                t.NonSessionLog.OnEvent($"Connection failed [session {t.Session.SessionID}]: {e}", LogLevel.Error);
                 return;
             }
-            t.Session.Log.OnEvent($"Connection failed: {e}");
+            t.Session.Log.OnEvent($"Connection failed: {e}", LogLevel.Error);
         }
 
         private void AddThread(SocketInitiatorThread thread)
@@ -186,7 +187,7 @@ namespace QuickFix.Transport
                 }
                 catch (Exception e)
                 {
-                    _nonSessionLog.OnEvent($"Failed to start: {e}");
+                    _nonSessionLog.OnEvent($"Failed to start: {e}", LogLevel.Warn);
                 }
 
                 Thread.Sleep(1 * 1000);
@@ -234,7 +235,7 @@ namespace QuickFix.Transport
                 AddThread(t);
             }
             catch (Exception e) {
-                session.Log.OnEvent(e.Message);
+                session.Log.OnEvent(e.Message, LogLevel.Error);
             }
         }
 

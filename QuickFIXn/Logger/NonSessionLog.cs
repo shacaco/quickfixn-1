@@ -1,4 +1,5 @@
 #nullable enable
+using NLog;
 using System;
 
 namespace QuickFix.Logger;
@@ -18,11 +19,18 @@ public class NonSessionLog {
         _logFactory = logFactory;
     }
 
-    internal void OnEvent(string s) {
-        lock (_sync) {
+    internal void OnEvent(string s) 
+    {
+        OnEvent(s, LogLevel.Info);
+    }
+
+    internal void OnEvent(string s, LogLevel logLevel)
+    {
+        lock (_sync)
+        {
             _log ??= _logFactory.CreateNonSessionLog();
         }
-        _log.OnEvent(s);
+        _log.OnEvent(s, logLevel);
     }
 }
 

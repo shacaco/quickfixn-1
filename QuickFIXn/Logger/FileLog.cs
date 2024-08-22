@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using NLog;
 using QuickFix.Fields.Converters;
 using QuickFix.Util;
 
@@ -112,11 +113,16 @@ public class FileLog : ILog
 
     public void OnEvent(string s)
     {
+        OnEvent(s, LogLevel.Info);
+    }
+
+    public void OnEvent(string s, LogLevel logLevel)
+    {
         DisposedCheck();
 
         lock (_sync)
         {
-            _eventLog.WriteLine(DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond) + " : " + s);
+            _eventLog.WriteLine($"{DateTimeConverter.ToFIX(DateTime.UtcNow, TimeStampPrecision.Millisecond)} {logLevel} : {s}");
         }
     }
 

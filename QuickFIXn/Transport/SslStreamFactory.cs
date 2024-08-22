@@ -5,6 +5,7 @@ using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using NLog;
 using QuickFix.Logger;
 using QuickFix.Util;
 
@@ -53,7 +54,7 @@ internal sealed class SslStreamFactory
         }
         catch (AuthenticationException ex)
         {
-            _nonSessionLog.OnEvent($"Unable to perform authentication against server: {ex.GetFullMessage()}");
+            _nonSessionLog.OnEvent($"Unable to perform authentication against server: {ex.GetFullMessage()}", LogLevel.Error);
             throw;
         }
 
@@ -98,7 +99,7 @@ internal sealed class SslStreamFactory
         }
         catch (AuthenticationException ex)
         {
-            _nonSessionLog.OnEvent($"Unable to perform authentication against server: {ex.GetFullMessage()}");
+            _nonSessionLog.OnEvent($"Unable to perform authentication against server: {ex.GetFullMessage()}", LogLevel.Error);
             throw;
         }
 
@@ -169,12 +170,12 @@ internal sealed class SslStreamFactory
         if (!ContainsEnhancedKeyUsage(certificate, enhancedKeyUsage)) {
             var role = enhancedKeyUsage == CLIENT_AUTHENTICATION_OID ? "client" : "server";
             _nonSessionLog.OnEvent(
-                $"Remote certificate is not intended for {role} authentication: It is missing enhanced key usage {enhancedKeyUsage}");
+                $"Remote certificate is not intended for {role} authentication: It is missing enhanced key usage {enhancedKeyUsage}", LogLevel.Error);
             return false;
         }
 
         if (string.IsNullOrEmpty(_socketSettings.CACertificatePath)) {
-            _nonSessionLog.OnEvent("CACertificatePath is not specified");
+            _nonSessionLog.OnEvent("CACertificatePath is not specified", LogLevel.Error);
             return false;
         }
 
@@ -184,7 +185,7 @@ internal sealed class SslStreamFactory
         X509Certificate2? cert = SslCertCache.LoadCertificate(caCertPath, null);
         if (cert is null) {
             _nonSessionLog.OnEvent(
-                $"Certificate '{caCertPath}' could not be loaded from store or path '{Directory.GetCurrentDirectory()}'");
+                $"Certificate '{caCertPath}' could not be loaded from store or path '{Directory.GetCurrentDirectory()}'", LogLevel.Error);
             return false;
         }
 
@@ -209,7 +210,7 @@ internal sealed class SslStreamFactory
         // Any basic authentication check failed, do after checking CA
         if (sslPolicyErrors != SslPolicyErrors.None)
         {
-            _nonSessionLog.OnEvent($"Remote certificate was not recognized as a valid certificate: {sslPolicyErrors}");
+            _nonSessionLog.OnEvent($"Remote certificate was not recognized as a valid certificate: {sslPolicyErrors}", LogLevel.Error);
             return false;
         }
 

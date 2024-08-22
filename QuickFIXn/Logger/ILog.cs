@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 
 namespace QuickFix.Logger;
 
@@ -29,4 +30,11 @@ public interface ILog : IDisposable
     /// </summary>
     /// <param name="s">event description</param>
     void OnEvent(string s);
+
+    /// <summary>
+    /// Logs a session event
+    /// </summary>
+    /// <param name="s">event description</param>
+    /// <param name="logLevel"></param>
+    void OnEvent(string s, LogLevel logLevel);
 }

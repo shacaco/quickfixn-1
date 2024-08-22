@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using NLog;
 using QuickFix.Logger;
 
 namespace QuickFix
@@ -107,7 +108,7 @@ namespace QuickFix
             }
             catch (Exception e)
             {
-                Session.Log.OnEvent(e.ToString());
+                Session.Log.OnEvent(e.ToString(), LogLevel.Error);
                 Disconnect();
             }
             return false;

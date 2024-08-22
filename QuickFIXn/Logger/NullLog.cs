@@ -1,4 +1,5 @@
 ﻿
+using NLog;
 using System;
 
 namespace QuickFix.Logger;
@@ -20,6 +21,9 @@ public sealed class NullLog : ILog
     { }
 
     public void OnEvent(string s)
+    { }
+
+    public void OnEvent(string s, LogLevel logLevel)
     { }
 
     public void Dispose()

@@ -5,6 +5,7 @@ using System.Net;
 using System;
 using QuickFix.Logger;
 using QuickFix.Store;
+using NLog;
 
 namespace QuickFix
 {
@@ -177,7 +178,7 @@ namespace QuickFix
                 }
                 catch (Exception e)
                 {
-                    session.Log.OnEvent($"Error during logout of Session {session.SessionID}: {e.Message}");
+                    session.Log.OnEvent($"Error during logout of Session {session.SessionID}: {e.Message}", LogLevel.Warn);
                 }
             }
 
@@ -192,7 +193,7 @@ namespace QuickFix
                     }
                     catch (Exception e)
                     {
-                        session.Log.OnEvent($"Error during disconnect of Session {session.SessionID}: {e.Message}");
+                        session.Log.OnEvent($"Error during disconnect of Session {session.SessionID}: {e.Message}", LogLevel.Warn);
                     }
                 }
             }
