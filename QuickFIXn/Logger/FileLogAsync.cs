@@ -184,7 +184,7 @@ namespace QuickFix.Logger
 
         class WritePackage
         {
-            internal char[] Buffer { get; } = new char[1024];
+            internal char[] Buffer { get; } = new char[2048];
             internal int Length { get; set; }
             internal DateTime Time { get; set; }
             internal LogLevel LogLevel { get; set; }
