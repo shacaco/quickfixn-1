@@ -30,7 +30,15 @@ namespace QuickFix.Logger
         private bool _abortTask;
         private bool _disposed;
 
-        private readonly ProducerConsumerBuffer<WritePackage> _buffer = new ProducerConsumerBuffer<WritePackage>(4000, () => new WritePackage());
+        private readonly LowLatencyPool<WritePackage> _pool = new LowLatencyPool<WritePackage>(() => new WritePackage(), new LowLatencyPoolOptions<WritePackage>
+        {
+            DuplicateHandling = DuplicateHandling.Throw,
+            GrowthPolicy = GrowthPolicy.Fixed,
+            InitialSize = 4000,
+            EmptyPoolBehavior = EmptyPoolBehavior.Throw,
+            FullPoolBehavior = FullPoolBehavior.Throw,
+            ResetAction = q => { }
+        });
         private Thread _writeThread;
         private readonly ConcurrentQueue<WritePackage> _messages = new ConcurrentQueue<WritePackage>();
         private readonly ConcurrentQueue<WritePackage> _events = new ConcurrentQueue<WritePackage>();
@@ -131,7 +139,7 @@ namespace QuickFix.Logger
 
         private void AddWriteOperation(ConcurrentQueue<WritePackage> dest, ReadOnlySpan<char> msg, LogLevel logLevel)
         {
-            var package = _buffer.Dequeue();
+            var package = _pool.Rent();
             package.Time = DateTime.UtcNow;
             package.LogLevel = logLevel;
             msg.CopyTo(package.Buffer.AsSpan());
@@ -162,7 +170,7 @@ namespace QuickFix.Logger
                             messageLog_.Write(timeStr);
                             messageLog_.Write(Colon);
                             messageLog_.WriteLine(package.Buffer, 0, package.Length);
-                            _buffer.Enqueue(package);
+                            _pool.Return(package);
                         }
 
                         while (_events.TryDequeue(out var package))
@@ -173,7 +181,7 @@ namespace QuickFix.Logger
                             eventLog_.Write(package.LogLevel);
                             eventLog_.Write(Colon);
                             eventLog_.WriteLine(package.Buffer, 0, package.Length);
-                            _buffer.Enqueue(package);
+                            _pool.Return(package);
                         }
                     }
                 }
