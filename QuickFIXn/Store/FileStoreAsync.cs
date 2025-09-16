@@ -286,12 +286,14 @@ namespace QuickFix.Store
                         setBuffer.Append(msgSeqNum).Append(",").Append(offset).Append(",").Append(length);
                         _headerFile.WriteLine(setBuffer.ToString());
                         _headerFile.Flush();
+                        File.SetLastWriteTimeUtc(_headerFileName, DateTime.UtcNow);// touch the file so the syncthing process knows it changed
 
                         var offsetObject = new MsgDef(offset, length);
                         _offsets[msgSeqNum] = offsetObject;
 
                         _msgFile.Write(writeBuffer, 0, length);
                         _msgFile.Flush();
+                        File.SetLastWriteTimeUtc(_msgFileName, DateTime.UtcNow);// touch the file so the syncthing process knows it changed
                     }
 
                     seqMsgBuffer.Remove(0, 20);
@@ -302,6 +304,7 @@ namespace QuickFix.Store
                     _seqNumsWriter.BaseStream.Seek(0, SeekOrigin.Begin);
                     _seqNumsWriter.Write(seqMsgBuffer.ToString());
                     _seqNumsWriter.Flush();
+                    File.SetLastWriteTimeUtc(_seqNumsFileName, DateTime.UtcNow);// touch the file so the syncthing process knows it changed
                 }
             }
         }
