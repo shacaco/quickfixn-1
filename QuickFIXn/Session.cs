@@ -535,11 +535,11 @@ namespace QuickFix
         /// <param name="msg"></param>
         private void NextMessage(ReadOnlySpan<char> msg)
         {
-            Utils.StopWatchRepo.TryStartWatch(out int id);
+            Utils.StopWatchRepo.TryStartWatch(out long startTimeStamp);
             this.Log.OnIncoming(msg);
             LastIncomingMessageTime = DateTime.Now;
             Next(_messageBuilder, msg);
-            Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", id);
+            Utils.StopWatchRepo.TryStopWatch("Session.NextMessage", startTimeStamp);
         }
 
         /// <summary>
